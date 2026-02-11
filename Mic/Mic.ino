@@ -24,8 +24,8 @@ void setup() {
   audioShield.inputSelect(AUDIO_INPUT_MIC);
   audioShield.micGain(20); // in dB NE PAS METTRE EN COMMENTAIRE OU SURDITE INEVITABLE
   audioShield.volume(0.8);
-  filtre1.setup(12.0f, 1500.0f, 600.0f);
-  //filtre2.setup(6.0f, 1200.0f, 400.0f);
+  filtre1.setup(18.0f, 1500.0f, 400.0f);
+  filtre2.setup(18.0f, 1500.0f, 400.0f);
   queue.begin(); // Démarrer la capture
 }
 
@@ -45,8 +45,8 @@ void loop() {
 
         // Application du filtre
         if (buttonState == 0){
-          filteredSample = filtre1.tick(sample);
-          //filteredSample = filtre2.tick(sample);
+          float temp = filtre1.tick(sample);
+          filteredSample = filtre2.tick(temp);
         }
         else{
           filteredSample = sample;
