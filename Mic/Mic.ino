@@ -24,8 +24,8 @@ void setup() {
   audioShield.inputSelect(AUDIO_INPUT_MIC);
   audioShield.micGain(20); // in dB NE PAS METTRE EN COMMENTAIRE OU SURDITE INEVITABLE
   audioShield.volume(0.8);
-  filtre1.setup(18.0f, 1500.0f, 400.0f);
-  filtre2.setup(18.0f, 1500.0f, 400.0f);
+  filtre1.setup(18.0f, 2000.0f, 400.0f);
+  filtre2.setup(18.0f, 2000.0f, 400.0f);
   queue.begin(); // Démarrer la capture
 }
 
