@@ -24,8 +24,8 @@ void setup() {
   audioShield.inputSelect(AUDIO_INPUT_MIC);
   audioShield.micGain(20); // in dB NE PAS METTRE EN COMMENTAIRE OU SURDITE INEVITABLE
   audioShield.volume(0.8);
-  filtre1.setup(18.0f, 2000.0f, 400.0f);
-  filtre2.setup(18.0f, 2000.0f, 400.0f);
+  filtre1.setup(-150.0f, 10000.0f, 10000.0f);
+  //filtre2.setup(18.0f, 2000.0f, 400.0f);
   queue.begin(); // Démarrer la capture
 }
 
@@ -41,16 +41,10 @@ void loop() {
         // Conversion entier -> float (-1.0 à 1.0 car on normalise la valeur)
         float sample = (float)inbuffer[i] / 32768.0f;
 
-        float filteredSample;
+
 
         // Application du filtre
-        if (buttonState == 0){
-          float temp = filtre1.tick(sample);
-          filteredSample = filtre2.tick(temp);
-        }
-        else{
-          filteredSample = sample;
-        }
+        float filteredSample = filtre1.tick(sample);
 
 
         // Conversion float -> entier non normalisé avec sécurité pour que ça dépasse pas la val max possible
