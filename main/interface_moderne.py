@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from manage_data import get_data
 
 class Window(tk.Tk):
 
@@ -49,13 +50,23 @@ class Window(tk.Tk):
         self.btn_diag = tk.Button(control_frame, text="Lancer le diagnostic", command=self.diagnostic, **btn_config)
         self.btn_diag.pack(side="left", padx=15, expand=True, fill="both")
 
+        self.btn_stop_diag = tk.Button(control_frame, text="Arrêter le diagnostic", command=self.stop_diagnostic, **btn_config)
+        self.btn_stop_diag.pack(side="left", padx=15, expand=True, fill="both")
+
         self.btn_correction = tk.Button(control_frame, text="Démarrer la correction", command=self.correction, **btn_config)
         self.btn_correction.pack(side="left", padx=15, expand=True, fill="both")
 
-        # Bouton simulation (caché)
-        self.btn_run_sim = tk.Button(control_frame, text="Lancer la simulation", command=self.simulation, **btn_config)
+        self.btn_stop_corr = tk.Button(control_frame, text="Arrêter la correction", command=self.stop_correction, **btn_config)
+        self.btn_stop_corr.pack(side="left", padx=15, expand=True, fill="both")
 
-        self.btn_mode = tk.Button(control_frame, text="Passer en mode simulation", command=self.change_mode, **btn_config)
+        # Bouton simulation (caché)
+        self.btn_run_sim = tk.Button(control_frame, text="Lancer la simulation", command=self.start_simulation, **btn_config)
+        self.btn_stop_sim = tk.Button(control_frame, text="Arrêter la simulation", command=self.stop_simulation, **btn_config)
+
+        # On prend la config de base et on écrase le 'bg' et l''activebackground'
+        mode_config = {**btn_config, "bg": "#4682B4", "activebackground": "#3b6d98"}
+        # On crée le bouton avec cette nouvelle config fusionnée
+        self.btn_mode = tk.Button(control_frame, text="Passer en mode simulation", command=self.change_mode, **mode_config)        
         self.btn_mode.pack(side="left", padx=15, expand=True, fill="both")
 
         # Affichage en mode correction
@@ -76,14 +87,14 @@ class Window(tk.Tk):
         # --- Sélecteur d'ÂGE ---
         tk.Label(self.sim_params_frame, text="Âge de l'audition :", font=("Segoe UI", 20), bg='#f5f6f7').pack(pady=(165, 0))
         self.age_var = tk.IntVar(value=20)
-        self.age_scale = tk.Scale(self.sim_params_frame, from_=30, to=80, resolution=10, orient="horizontal", variable=self.age_var, bg='#f5f6f7', bd=0, length=460, width=30, sliderlength=75, sliderrelief='ridge', font=("Segoe UI", 16))
+        self.age_scale = tk.Scale(self.sim_params_frame, from_=20, to=80, resolution=10, orient="horizontal", variable=self.age_var, bg='#f5f6f7', bd=0, length=460, width=30, sliderlength=75, sliderrelief='ridge', font=("Segoe UI", 16))
         self.age_scale.pack(padx=10)
 
         # --- Sélecteur de DÉGRADATION ---
         tk.Label(self.sim_params_frame, text="Niveau d'exposition sonore :", font=("Segoe UI", 20), bg='#f5f6f7').pack(pady=(60, 10))
-        self.expo_var = tk.StringVar(value="Sain")
+        self.expo_var = tk.StringVar(value="Normal")
         self.option_add('*TCombobox*Listbox.font', ("Segoe UI", 16)) # pour changer la police du menu déroulant
-        self.expo_menu = ttk.Combobox(self.sim_params_frame, textvariable=self.expo_var, values=["Sain", "Exposition modérée (Travail bruyant)", "Exposition forte (Concerts/Casque)", "Dégradation sévère"], state="readonly", font=("Segoe UI", 16), width=40)
+        self.expo_menu = ttk.Combobox(self.sim_params_frame, textvariable=self.expo_var, values=["Normal", "Exposition modérée (Environnement bruyant)", "Exposition forte (Concerts)", "Exposition dangereuse"], state="readonly", font=("Segoe UI", 16), width=40)
         self.expo_menu.pack(padx=20, pady=10)
 
         # Audiogramme correspondant à la simulation à droite
@@ -109,7 +120,8 @@ class Window(tk.Tk):
         self.popup_test()
 
         # Données fictives
-        donnees = ['125.00,10.00,0.00', '250.00,0.00,0.00', '500.00,0.00,0.00', '1000.00,0.00,0.00', '2000.00,70.00,0.00', '4000.00,0.00,30.00', '8000.00,0.00,0.00']
+        donnees = get_data()
+        #['125.00,10.00,0.00', '250.00,0.00,0.00', '500.00,0.00,0.00', '1000.00,0.00,0.00', '2000.00,70.00,0.00', '4000.00,0.00,30.00', '8000.00,0.00,0.00']
         
         if donnees:
 
@@ -143,8 +155,11 @@ class Window(tk.Tk):
             
             self.fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.15, wspace=0.3)
             self.canvas.draw()
-        else:
-            messagebox.showwarning("Erreur", "Aucune donnée reçue.")
+
+
+
+    def stop_diagnostic(self):
+        self.popup.destroy()
 
 
 
@@ -153,9 +168,72 @@ class Window(tk.Tk):
 
 
 
-    def simulation(self, ):
+    def stop_correction(self):
+        # on réinitialise l'affichage des graphes
+        self.style_graph([self.ax_gauche, self.ax_droite], ["OREILLE GAUCHE", "OREILLE DROITE"], self.fig)
+        self.canvas.draw()
+
+
+
+    def start_simulation(self, ):
         # on nettoie le graphe
         self.style_graph([self.ax_sim], [""], self.fig_sim)
+        self.canvas_sim.draw()
+
+        age = self.age_var.get()
+        expo = self.expo_var.get()
+
+        
+        freqs = [125, 250, 500, 1000, 2000, 4000, 8000]
+        vingt = [0, 0, 0, 0, 0, 3, 8]
+        trente = [3, 3, 3, 4, 5, 13, 18]
+        quarante = [7, 7, 7, 8, 9, 22, 26]
+        cinquante = [10, 10, 12, 13, 14, 30, 33]
+        soixante = [13, 14, 17, 18, 23, 40, 49]
+        soixantedix = [18, 19, 23, 28, 32, 49, 59]
+        quatrevingts = [22, 23, 29, 32, 40, 55, 68]
+
+        # A MODIFIER
+        if "Exposition modérée (Environnement bruyant)" in expo: 
+            trauma = 15
+        elif "Exposition forte (Concerts)" in expo: 
+            trauma = 30
+        elif "Exposition dangereuse" in expo: 
+            trauma = 50
+        else:
+            trauma = 0
+
+        if age == 20:
+            points = vingt
+        elif age == 30:
+            points = trente
+        elif age == 40:     
+            points = quarante
+        elif age == 50:
+            points = cinquante
+        elif age == 60:
+            points = soixante
+        elif age == 70:
+            points = soixantedix
+        else:
+            points = quatrevingts
+
+        for i in range(len(points)):
+            points[i] += trauma
+
+        # Mise à jour du graphique spécifique à la simulation
+        self.ax_sim.set_xticks(freqs)
+        self.ax_sim.get_xaxis().set_major_formatter(plt.ScalarFormatter())
+        self.ax_sim.plot(freqs, points, color="#e74c3c", marker='x', markersize=8, linewidth=2)
+        self.fig_sim.subplots_adjust(left=0.15, right=0.85, top=0.95, bottom=0.25)
+        self.canvas_sim.draw()
+
+
+
+    def stop_simulation(self):
+        # on nettoie le graphe
+        self.style_graph([self.ax_sim], [""], self.fig_sim)
+        self.canvas_sim.draw()
 
 
 
@@ -166,12 +244,16 @@ class Window(tk.Tk):
             self.correction_frame.pack_forget()
             self.btn_diag.pack_forget()
             self.btn_correction.pack_forget()
+            self.btn_stop_diag.pack_forget()
+            self.btn_stop_corr.pack_forget()
             
             # Afficher l'interface de simulation
             self.simulation_frame.pack(fill="both", expand=True)
             
-            # On place le bouton 'Lancer simulation' à gauche du bouton de mode
-            self.btn_run_sim.pack(side="left", padx=10, expand=True, fill="both", before=self.btn_mode)      
+            # On place les boutons
+            self.btn_stop_sim.pack(side="left", padx=10, expand=True, fill="both", before=self.btn_mode) 
+            self.btn_run_sim.pack(side="left", padx=10, expand=True, fill="both", before=self.btn_stop_sim)  
+             
 
             self.mode.config(text="MODE SIMULATION")
             self.btn_mode.config(text="Passer en mode correction")
@@ -179,6 +261,7 @@ class Window(tk.Tk):
             # Cacher l'interface de simulation
             self.simulation_frame.pack_forget()
             self.btn_run_sim.pack_forget()
+            self.btn_stop_sim.pack_forget()
             
             # Réafficher l'interface de diagnostic
             self.correction_frame.pack(fill="both", expand=True)
@@ -186,6 +269,9 @@ class Window(tk.Tk):
             # On réaffiche les boutons
             self.btn_correction.pack(side="left", padx=10, expand=True, fill="both", before=self.btn_mode)
             self.btn_diag.pack(side="left", padx=10, expand=True, fill="both", before=self.btn_correction) 
+            self.btn_stop_diag.pack(side="left", padx=15, expand=True, fill="both", after=self.btn_diag)
+            self.btn_stop_corr.pack(side="left", padx=15, expand=True, fill="both", after=self.btn_stop_diag)
+
             
             self.mode.config(text="MODE CORRECTION")
             self.btn_mode.config(text="Passer en mode simulation")   
@@ -211,8 +297,8 @@ class Window(tk.Tk):
         info_frame.pack(expand=True)
 
     
-        tk.Label(info_frame, text="ⓘ", font=("Segoe UI", 65), fg="#2196F3", bg="white").grid(row=0, column=0, padx=10, sticky="ns")
-        tk.Label(info_frame, text="Test auditif en cours", font=("Segoe UI", 25, "bold"), bg="white").grid(row=0, column=1, pady=(15,0), sticky="ns")
+        tk.Label(info_frame, text="ⓘ", font=("Segoe UI", 65), fg="#2196F3", bg="white").grid(row=0, column=0, padx=10)
+        tk.Label(info_frame, text="Test auditif en cours", font=("Segoe UI", 25, "bold"), bg="white").grid(row=0, column=1, pady=(15,0))
         
         # On force la mise à jour visuelle pour que le popup apparaisse bien
         self.update()
@@ -230,6 +316,7 @@ class Window(tk.Tk):
                 
                 ax.set_xscale('log')
                 ax.invert_yaxis()
+                ax.set_ylim(90, -10)
                 
                 ax.grid(True, which="both", linestyle='--', alpha=0.3)
 
