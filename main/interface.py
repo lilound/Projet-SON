@@ -70,13 +70,13 @@ class Window(tk.Tk):
         self.correction_frame = ttk.Frame(self)
         self.correction_frame.pack(fill="both", expand=True) # Affiché par défaut
 
-        # On déplace ton graph_frame à l'intérieur de correction_frame
         self.graph_frame = ttk.LabelFrame(self.correction_frame)
         self.graph_frame.pack(fill="both", expand=True, padx=10, pady=5)
 
-        # ZONE 2 : Mode Simulation (vide pour l'instant)
-        self.simulation_frame = ttk.Frame(self)
-        # On ne fait pas de .pack() ici pour qu'il soit caché au début
+        tk.Label(self.graph_frame, text="AUDIOGRAMMES", font=("Segoe UI", 22)).pack(side="top", pady=(20, 0))
+
+
+        self.simulation_frame = ttk.Frame(self) # On ne fait pas de .pack() ici pour qu'il soit caché au début
 
     
 
@@ -88,20 +88,20 @@ class Window(tk.Tk):
         self.style_graph()
         self.canvas.draw()
 
+        # Affichage du popup
         self.popup_test()
 
-        # On appelle la fonction du deuxième fichier
+        # On récupère les données du teensy
         donnees = ['125.00,10.00,0.00', '250.00,0.00,0.00', '500.00,0.00,0.00', '1000.00,0.00,0.00', '2000.00,70.00,0.00', '4000.00,0.00,30.00', '8000.00,0.00,0.00']
         #get_data()
         
-        freqs = []
-        gauche = []
-        droite = []
-
         if donnees:
             self.popup.destroy()
 
-        # Extraction des données
+            freqs = []
+            gauche = []
+            droite = []
+
             for ligne in donnees:
                 try:
                     # On sépare par la virgule (format '125.00,10.00,0.00')
@@ -112,22 +112,16 @@ class Window(tk.Tk):
                 except ValueError:
                     continue 
 
-            # Nettoyage des anciens tracés
-            self.ax_gauche.clear()
-            self.ax_droite.clear()
-
-            self.style_graph()
-
-            # Affichage des chiffres des fréquences
+            # Affichage des chiffres des fréquences sur l'abscisses
             self.ax_gauche.set_xticks(freqs)
             self.ax_droite.set_xticks(freqs)
             self.ax_gauche.get_xaxis().set_major_formatter(plt.ScalarFormatter())
             self.ax_droite.get_xaxis().set_major_formatter(plt.ScalarFormatter())
 
-            # Tracé Oreille Gauche (Bleu, souvent 'X' en audiométrie)
+            # Tracé Oreille Gauche
             self.ax_gauche.plot(freqs, gauche, 'b-x', label="Gauche")
 
-            # Tracé Oreille Droite (Rouge, souvent 'O')
+            # Tracé Oreille Droite
             self.ax_droite.plot(freqs, droite, 'r-x', label="Droite")
 
             # Rafraîchissement du canvas
@@ -164,7 +158,7 @@ class Window(tk.Tk):
         # Le texte en noir
         tk.Label(info_frame, text="Test auditif en cours", font=("Segoe UI", 25, "bold"), bg="white").grid(row=0, column=1, pady=(14,0))
         
-        # On force la mise à jour visuelle pour que la popup apparaisse bien
+        # On force la mise à jour visuelle pour que le popup apparaisse bien
         self.update()
 
 
@@ -199,10 +193,8 @@ class Window(tk.Tk):
             # 2. Réafficher l'interface de diagnostic
             self.correction_frame.pack(fill="both", expand=True)
             
-            # On réaffiche les boutons en partant de celui le plus proche du bouton mode
-            # On remet le bouton Correction d'abord (à gauche du bouton mode)
+            # On réaffiche les boutons
             self.btn_correction.pack(side="left", padx=10, pady=20, expand=True, fill="both", before=self.btn_mode)
-            # Puis on remet le bouton Diagnostic (à gauche du bouton correction)
             self.btn_diag.pack(side="left", padx=10, pady=20, expand=True, fill="both", before=self.btn_correction)
             
             self.btn_mode.config(text="Passer en mode simulation")   
