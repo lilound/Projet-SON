@@ -1,17 +1,17 @@
 import serial
 import time
+from interface import Window
 
-# Remplace 'COM3' par ton port (ex: '/dev/ttyACM0' sur Linux/Mac)
-# Le baudrate doit être IDENTIQUE à celui de l'Arduino (9600)
 arduino = serial.Serial(port='COM3', baudrate=9600, timeout=.1)
 
-def write_read(x):
-    arduino.write(bytes(x, 'utf-8'))
-    time.sleep(0.05)
+def read():
     data = arduino.readline()
+    time.sleep(0.05)
     return data
 
+int = Window()
+int.mainloop()
+
 while True:
-    num = input("Tape un message pour l'Arduino : ")
-    value = write_read(num)
+    value = read()
     print("Réponse de l'Arduino :", value.decode('utf-8'))
