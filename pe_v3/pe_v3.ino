@@ -82,7 +82,7 @@ void setup() {
   audioShield.enable();
   audioShield.inputSelect(AUDIO_INPUT_MIC);
   audioShield.micGain(20); 
-  audioShield.volume(0.8);
+  audioShield.volume(0.5);
 
   // Initialisation des filtres de correction
   filtre1.setup(-150.0f, 10000.0f, 10000.0f);
@@ -222,7 +222,7 @@ void passerAOreilleSuivante() {
 
     audioShield.inputSelect(AUDIO_INPUT_MIC);
     audioShield.micGain(20); // Remet le gain micro nécessaire pour la correction
-    audioShield.volume(0.8);  // Monte le volume général comme dans mic.ino
+    audioShield.volume(0.5);  // Monte le volume général comme dans mic.ino
     queue.begin();           // Relance la capture
     }
 }
