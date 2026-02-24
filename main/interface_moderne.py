@@ -127,6 +127,10 @@ class Window(tk.Tk):
 
             # on ferme le pop up
             self.popup.destroy()
+            self.btn_diag.config(state="normal")
+            self.btn_correction.config(state="normal")
+            self.btn_mode.config(state="normal")
+            self.btn_stop_corr.config(state="normal")
 
             freqs = []
             gauche = []
@@ -160,6 +164,10 @@ class Window(tk.Tk):
 
     def stop_diagnostic(self):
         self.popup.destroy()
+        self.btn_diag.config(state="normal")
+        self.btn_correction.config(state="normal")
+        self.btn_mode.config(state="normal")
+        self.btn_stop_corr.config(state="normal")
 
 
 
@@ -282,6 +290,10 @@ class Window(tk.Tk):
         self.popup = tk.Toplevel(self)
         self.popup.title("Information")
         self.popup.configure(bg="white")
+        self.btn_diag.config(state="disabled")
+        self.btn_correction.config(state="disabled")
+        self.btn_mode.config(state="disabled")
+        self.btn_stop_corr.config(state="disabled")
 
         # Centrage dynamique
         w, h = 800, 300
@@ -290,7 +302,6 @@ class Window(tk.Tk):
         self.popup.geometry(f"{w}x{h}+{x}+{y}")
         
         self.popup.transient(self) # le popup appartient à la fenêtre principale
-        self.popup.grab_set() # empêche d'interagir avec la fenêtre principale
 
         # Conteneur pour centrer les deux éléments
         info_frame = tk.Frame(self.popup, bg="white")
