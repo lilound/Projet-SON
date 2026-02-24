@@ -134,18 +134,7 @@ void loop() {
   if (modeDiagnostic) {
     loopDiagnostic();
   } 
-  else if (commande.indexOf(',') > 0) {
-      mettreAJourFiltresSimulation(commande);
-      int startIndex = 0;
-        for (int i = 0; i < 7; i++) {
-            int endIndex = commande.indexOf(',', startIndex);
-            if (endIndex == -1) endIndex = commande.length();
-            float gain = commande.substring(startIndex, endIndex).toFloat();
-            float freq = 125.0 * pow(2, i);
-            myDsp.setFilter(i, gain, freq, freq * 0.5); // Mise à jour du filtre i
-            startIndex = endIndex + 1;
-    }
-  }
+  
   
 }
 
