@@ -37,6 +37,9 @@ def get_data_from_teensy(port=port_COM, baudrate=9600):
         elif recording and line:
             data_captured.append(line)
 
+        elif line == "ARRET_DIAG":
+            return ""
+
 
 def send_data_to_teensy(data, port=port_COM, baudrate=9600):
     arduino = serial.Serial(port=port, baudrate=baudrate, timeout=.1)

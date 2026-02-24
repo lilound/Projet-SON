@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from manage_data import get_data_from_teensy, send_data_to_teensy
 import threading
+import sys
 
 class Window(tk.Tk):
 
@@ -171,9 +172,11 @@ class Window(tk.Tk):
         # Cette fonction tourne en arrière-plan
         donnees = get_data_from_teensy()
         
-        
         if donnees:
-            self.after(0, self.finaliser_diagnostic, donnees) # On continue avec les données
+            if donnees == "":
+                sys.exit(1)
+            else:
+                self.after(0, self.finaliser_diagnostic, donnees) # On continue avec les données
 
 
 

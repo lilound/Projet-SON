@@ -154,6 +154,7 @@ void loopDiagnostic() {
         modeDiagnostic = false;
         modeCorrection = false;
         myDsp.setMute(true);
+        return;
       }
   }
   float freqActuelle = frequencesStandard[indexFreq];
