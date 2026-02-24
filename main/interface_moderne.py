@@ -172,7 +172,7 @@ class Window(tk.Tk):
 
     def run_diagnostic_thread(self):
         # Cette fonction tourne en arrière-plan
-        donnees = get_data_from_teensy()
+        donnees = get_data_from_teensy(port_COM)
         
         if donnees:
             if donnees == "STOPPED":
