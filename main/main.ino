@@ -89,6 +89,7 @@ void setup() {
   audioShield.volume(0.5);
 
   // Initialisation Diagnostic
+  myDsp.setDiagnostic(true);
   myDsp.setEar(earMode);
   myDsp.setMute(false);
   tempsDebutPalier = millis();
@@ -136,12 +137,20 @@ void loop() {
         }
     }
   }
-  myDsp.setMute(!digitalRead(0));
+  
 
   // --- 2. EXÉCUTION DES MODES ---
   if (modeDiagnostic) {
     loopDiagnostic();
   } 
+  if (modeCorrection) {
+    if (digitalRead(0) == HIGH) {
+      // BOUTON MAINTENU : On met les gains à 0dB (Son naturel)
+      for (int i = 0; i < 7; i++) {
+        myDsp.setFilter(i, 0.0, frequencesStandard[i], 1.0);
+      }
+    }
+  }
 }
 
 
@@ -281,4 +290,5 @@ void lancerDiagnosticZones(Resultat* res, int nbRes, int ear, Intervalle* trous,
       }
     }
   }
+  myDsp.setMute(true);
 }
