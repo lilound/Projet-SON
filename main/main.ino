@@ -127,12 +127,13 @@ void loop() {
     else if (commande.indexOf(',') > 0) {
       int startIndex = 0;
         for (int i = 0; i < 7; i++) {
-            int endIndex = commande.indexOf(',', startIndex);
-            if (endIndex == -1) endIndex = commande.length();
-            float gain = commande.substring(startIndex, endIndex).toFloat();
-            float freq = 125.0 * pow(2, i);
-            myDsp.setFilter(i, gain, freq, freq * 0.5); // Mise à jour du filtre i
-            startIndex = endIndex + 1;
+          int endIndex = commande.indexOf(',', startIndex);
+          if (endIndex == -1) endIndex = commande.length();
+          float gain = commande.substring(startIndex, endIndex).toFloat();
+          float freq = 125.0 * pow(2, i);
+          myDsp.setFilter(i, gain, freq, freq * 0.5); // Mise à jour du filtre i
+          startIndex = endIndex + 1;
+        }
     }
   }
   myDsp.setMute(!digitalRead(0));
@@ -141,8 +142,6 @@ void loop() {
   if (modeDiagnostic) {
     loopDiagnostic();
   } 
-
-}
 }
 
 
@@ -154,7 +153,7 @@ void loopDiagnostic() {
 
   if (!enPauseEntreFrequences) {
     myDsp.setFreq(freqActuelle);
-    myDsp.setFilter(15.0, freqActuelle, 100.0);
+    myDsp.setFilter(0,0.0f, freqActuelle, 1.0f);
     audioShield.volume(dbToLin(dbPerteHL)); 
     
     Serial.print(freqActuelle); Serial.print(" ");
@@ -204,13 +203,11 @@ void passerAOreilleSuivante() {
     modeDiagnostic = false;
     modeCorrection = true;
     myDsp.setMute(true); // Coupe le générateur
-    queue.begin();       // Lance la capture micro
     Serial.println("--- PASSAGE EN MODE CORRECTION ---");
 
     audioShield.inputSelect(AUDIO_INPUT_MIC);
     audioShield.micGain(20); // Remet le gain micro nécessaire pour la correction
     audioShield.volume(0.5);  // Monte le volume général comme dans mic.ino
-    queue.begin();           // Relance la capture
     }
 }
 
