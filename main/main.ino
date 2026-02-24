@@ -93,9 +93,6 @@ void setup() {
   myDsp.setMute(false);
   tempsDebutPalier = millis();
   
-  if(modeDiagnostic) {
-    Serial.println("MODE DIAGNOSTIC ACTIF");
-    }
 }
 
 // ================================================================
