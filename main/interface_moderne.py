@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-from manage_data import get_data
+from manage_data import get_data_from_teensy, send_data_to_teensy
 
 class Window(tk.Tk):
 
@@ -120,7 +120,8 @@ class Window(tk.Tk):
         self.popup_test()
 
         # Données fictives
-        donnees = get_data()
+        send_data_to_teensy("START_DIAG\n")
+        donnees = get_data_from_teensy()
         #['125.00,10.00,0.00', '250.00,0.00,0.00', '500.00,0.00,0.00', '1000.00,0.00,0.00', '2000.00,70.00,0.00', '4000.00,0.00,30.00', '8000.00,0.00,0.00']
         
         if donnees:
@@ -172,12 +173,13 @@ class Window(tk.Tk):
 
 
     def correction(self): 
-        pass
+        send_data_to_teensy("START_CORR\n")
 
 
 
     def stop_correction(self):
         # on réinitialise l'affichage des graphes
+        send_data_to_teensy("STOP\n")
         self.style_graph([self.ax_gauche, self.ax_droite], ["OREILLE GAUCHE", "OREILLE DROITE"], self.fig)
         self.canvas.draw()
 
@@ -235,13 +237,19 @@ class Window(tk.Tk):
         self.ax_sim.plot(freqs, points, color="#e74c3c", marker='x', markersize=8, linewidth=2)
         self.fig_sim.subplots_adjust(left=0.15, right=0.85, top=0.95, bottom=0.25)
         self.canvas_sim.draw()
+ 
+        data = ",".join(map(str, points)) + "\n" # envoie les données sous la forme "0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
+        send_data_to_teensy(data)
 
 
 
     def stop_simulation(self):
         # on nettoie le graphe
+        send_data_to_teensy("STOP\n")
         self.style_graph([self.ax_sim], [""], self.fig_sim)
         self.canvas_sim.draw()
+
+        
 
 
 
