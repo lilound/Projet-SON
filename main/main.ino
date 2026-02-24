@@ -116,12 +116,15 @@ void loop() {
       myDsp.setMute(true);  // Coupe le générateur
 
     }
-    else if (commande == "STOP") {
-      myDsp.setDiagnostic(false);
-      modeDiagnostic = false;
-      modeCorrection = false;
-      myDsp.setMute(true);
-    }
+
+    if (commande == "STOP") {
+        myDsp.setDiagnostic(false);
+        modeDiagnostic = false;
+        modeCorrection = false;
+        myDsp.setMute(true);
+      }
+  
+    
     // Si la commande contient la liste de points (ex: "10,20,30...")
     else if (commande.indexOf(',') > 0) {
       int startIndex = 0;
@@ -154,6 +157,16 @@ void loop() {
 // DIAGNOSTIC
 // ================================================================
 void loopDiagnostic() {
+  if (Serial.available() > 0) {
+    String commande = Serial.readStringUntil('\n');
+    commande.trim(); // Nettoie les données reçues
+    if (commande == "STOP") {
+        myDsp.setDiagnostic(false);
+        modeDiagnostic = false;
+        modeCorrection = false;
+        myDsp.setMute(true);
+      }
+  }
   float freqActuelle = frequencesStandard[indexFreq];
 
   if (!enPauseEntreFrequences) {

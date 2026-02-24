@@ -4,6 +4,7 @@ from tkinter import ttk, messagebox
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from manage_data import get_data_from_teensy, send_data_to_teensy
+import threading
 
 class Window(tk.Tk):
 
@@ -121,10 +122,13 @@ class Window(tk.Tk):
 
         # Données fictives
         send_data_to_teensy("START_DIAG\n")
-        donnees = get_data_from_teensy()
-        #['125.00,10.00,0.00', '250.00,0.00,0.00', '500.00,0.00,0.00', '1000.00,0.00,0.00', '2000.00,70.00,0.00', '4000.00,0.00,30.00', '8000.00,0.00,0.00']
         
-        if donnees:
+        thread = threading.Thread(target=self.run_diagnostic_thread)
+        thread.daemon = True 
+        thread.start()
+
+
+    def finaliser_diagnostic(self):
 
             # on ferme le pop up
             self.popup.destroy()
@@ -160,6 +164,16 @@ class Window(tk.Tk):
             
             self.fig.subplots_adjust(left=0.05, right=0.95, top=0.95, bottom=0.15, wspace=0.3)
             self.canvas.draw()
+
+
+
+    def run_diagnostic_thread(self):
+        # Cette fonction tourne en arrière-plan
+        donnees = get_data_from_teensy()
+        
+        
+        if donnees:
+            self.after(0, self.finaliser_diagnostic, donnees) # On continue avec les données
 
 
 
