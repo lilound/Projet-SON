@@ -120,7 +120,7 @@ void loop() {
 
     }
     else if (commande == "STOP") {
-      myDsp.setDiagnostic(true);
+      myDsp.setDiagnostic(false);
       modeDiagnostic = false;
       modeCorrection = false;
       myDsp.setMute(true);
