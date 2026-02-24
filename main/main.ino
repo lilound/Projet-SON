@@ -145,13 +145,11 @@ void loop() {
     loopDiagnostic();
   } 
   if (modeCorrection) {
-    if (digitalRead(0) == HIGH) {
-      // BOUTON MAINTENU : On met les gains à 0dB (Son naturel)
       for (int i = 0; i < 7; i++) {
         myDsp.setFilter(i, 0.0, frequencesStandard[i], 1.0);
       }
     }
-  }
+  
 }
 
 
