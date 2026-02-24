@@ -72,6 +72,7 @@ void preparerFrequenceSuivante();
 void passerAOreilleSuivante();
 void afficherResultats();
 void lancerDiagnosticZones(Resultat* resultats, int nbRes, int ear, Intervalle* trous, int* nbTrous);
+void mettreAJourFiltresSimulation(String commande);
 
 // ================================================================
 // SETUP
@@ -124,15 +125,7 @@ void loop() {
     }
     // Si la commande contient la liste de points (ex: "10,20,30...")
     else if (commande.indexOf(',') > 0) {
-      int startIndex = 0;
-        for (int i = 0; i < 7; i++) {
-          int endIndex = commande.indexOf(',', startIndex);
-          if (endIndex == -1) endIndex = commande.length();
-          float gain = commande.substring(startIndex, endIndex).toFloat();
-          float freq = 125.0 * pow(2, i);
-          myDsp.setFilter(i, gain, freq, freq * 0.5); // Mise à jour du filtre i
-          startIndex = endIndex + 1;
-        }
+       mettreAJourFiltresSimulation(commande); // On traite les gains ici !
     }
   }
   
@@ -141,11 +134,18 @@ void loop() {
   if (modeDiagnostic) {
     loopDiagnostic();
   } 
-  if (modeCorrection) {
-      for (int i = 0; i < 7; i++) {
-        myDsp.setFilter(i, 0.0, frequencesStandard[i], 1.0);
-      }
+  else if (commande.indexOf(',') > 0) {
+      mettreAJourFiltresSimulation(commande);
+      int startIndex = 0;
+        for (int i = 0; i < 7; i++) {
+            int endIndex = commande.indexOf(',', startIndex);
+            if (endIndex == -1) endIndex = commande.length();
+            float gain = commande.substring(startIndex, endIndex).toFloat();
+            float freq = 125.0 * pow(2, i);
+            myDsp.setFilter(i, gain, freq, freq * 0.5); // Mise à jour du filtre i
+            startIndex = endIndex + 1;
     }
+  }
   
 }
 
@@ -287,4 +287,25 @@ void lancerDiagnosticZones(Resultat* res, int nbRes, int ear, Intervalle* trous,
     }
   }
   myDsp.setMute(true);
+}
+
+void mettreAJourFiltresSimulation(String commande) {
+  int startIndex = 0;
+  for (int i = 0; i < 7; i++) {
+    int endIndex = commande.indexOf(',', startIndex);
+    
+    // Si on ne trouve plus de virgule, on prend la fin de la chaîne
+    if (endIndex == -1) endIndex = commande.length();
+    
+    // Extraction du gain
+    float gain = commande.substring(startIndex, endIndex).toFloat();
+    float freq = frequencesStandard[i]; // On utilise tes fréquences (125, 250...)
+    
+    // Application au filtre (Q = 1.0 par défaut pour une correction douce)
+    myDsp.setFilter(i, gain, freq, 1.0); 
+    
+    startIndex = endIndex + 1;
+    if (startIndex >= commande.length()) break; 
+  }
+  Serial.println("FILTRES_OK"); // Petit feedback pour Python
 }
