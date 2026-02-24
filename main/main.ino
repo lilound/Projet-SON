@@ -192,7 +192,7 @@ void loopDiagnostic() {
 
 void passerAOreilleSuivante() {
   if (earMode == 0) {
-    lancerDiagnosticZones(sourdD, indD, 0, trousPrecisD, &nbTrousD);
+    //lancerDiagnosticZones(sourdD, indD, 0, trousPrecisD, &nbTrousD);
     earMode = 1;
     myDsp.setEar(earMode);
     indexFreq = 0;
@@ -201,7 +201,7 @@ void passerAOreilleSuivante() {
     myDsp.setMute(false);
     tempsDebutPalier = millis();
   } else {
-    lancerDiagnosticZones(sourdG, indG, 1, trousPrecisG, &nbTrousG);
+    //lancerDiagnosticZones(sourdG, indG, 1, trousPrecisG, &nbTrousG);
     afficherResultats();
     
     // FIN DU DIAGNOSTIC -> PASSAGE AUTOMATIQUE EN CORRECTION
