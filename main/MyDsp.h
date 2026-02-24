@@ -17,6 +17,7 @@ public:
   void setFilter(int id, float gain, float centerFreq, float bandwidth);  
   void setEar(int mode); // pour gérer sur quelle oreille on envoie : canal 0 : le gauche, canal 1 : le droit, canal 2 : les 2
   void setMute(bool mute); // couper le son pour de vrai
+  void setDiagnostic(bool diagnostic); // couper le son pour de vrai
 
   private:
   audio_block_t *inputQueueArray[1]; // Tableau pour stocker l'entrée
