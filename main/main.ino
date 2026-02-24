@@ -7,6 +7,7 @@
 // Inclusion de tes classes personnalisées
 #include "Peak.h"
 #include "MyDsp.h"
+#include "Additive.h"
 
 // --- ÉTATS DU SYSTÈME ---
 bool modeDiagnostic = true;   // Commence par le diagnostic
@@ -18,22 +19,17 @@ AudioInputI2S            in;
 AudioOutputI2S           out;
 AudioControlSGTL5000     audioShield;
 
-// Objets pour la CORRECTION (mic.ino)
-AudioRecordQueue         queue; 
-AudioPlayQueue           play;  
-
 // Objets pour le DIAGNOSTIC (pe_v3.ino)
 MyDsp                    myDsp; 
 
 // Connexions Audio
-// Chemin 1 : Diagnostic (Générateur -> Sortie)
+// Chemin 1 : Diagnostic
 AudioConnection          patchCordDiag1(myDsp, 0, out, 0);
 AudioConnection          patchCordDiag2(myDsp, 1, out, 1);
 
-// Chemin 2 : Correction (Micro -> Queue -> Traitement -> Play -> Sortie)
-AudioConnection          patchCordCorr1(in, 0, queue, 0);
-AudioConnection          patchCordCorr2(play, 0, out, 0);
-AudioConnection          patchCordCorr3(play, 0, out, 1);
+// Chemin 2 : Correction 
+AudioConnection          patchCordCorr1(in, 0, myDsp, 0);
+
 
 // --- VARIABLES GLOBALES (Issues des deux codes) ---
 
@@ -99,8 +95,7 @@ void setup() {
   
   if(modeDiagnostic) {
     Serial.println("MODE DIAGNOSTIC ACTIF");
-    queue.end(); // On ne capture pas le micro pendant le diag
-  }
+    }
 }
 
 // ================================================================
@@ -116,111 +111,40 @@ void loop() {
       modeDiagnostic = true;
       modeCorrection = false;
       myDsp.setMute(false); // Active le générateur
-      queue.end();          // Coupe le micro
     } 
     else if (commande == "START_CORR") {
       modeDiagnostic = false;
       modeCorrection = true;
       myDsp.setMute(true);  // Coupe le générateur
-      queue.begin();        // Active le micro
 
     }
     else if (commande == "STOP") {
       modeDiagnostic = false;
       modeCorrection = false;
       myDsp.setMute(true);
-      queue.end();
     }
     // Si la commande contient la liste de points (ex: "10,20,30...")
     else if (commande.indexOf(',') > 0) {
-      mettreAJourFiltresSimulation(commande);
+      int startIndex = 0;
+        for (int i = 0; i < 7; i++) {
+            int endIndex = commande.indexOf(',', startIndex);
+            if (endIndex == -1) endIndex = commande.length();
+            float gain = commande.substring(startIndex, endIndex).toFloat();
+            float freq = 125.0 * pow(2, i);
+            myDsp.setFilter(i, gain, freq, freq * 0.5); // Mise à jour du filtre i
+            startIndex = endIndex + 1;
     }
   }
+  myDsp.setMute(!digitalRead(0));
 
   // --- 2. EXÉCUTION DES MODES ---
   if (modeDiagnostic) {
     loopDiagnostic();
   } 
-  else if (modeCorrection) {
-    loopCorrection();
-  }
+
+}
 }
 
-
-
-// ================================================================
-// CORRECTION
-// ================================================================
-
-void mettreAJourFiltresSimulation(String data) {
-  // On utilise un index pour parcourir la chaîne
-  int i = 0;
-  
-  // On boucle tant qu'il reste du texte et qu'on n'a pas dépassé nos 7 filtres
-  while (data.length() > 0 && i < 7) {
-    int pos = data.indexOf(','); // On cherche la position du prochain séparateur
-    String valeur;
-
-    if (pos != -1) {
-      // On extrait ce qui est avant la virgule
-      valeur = data.substring(0, pos);
-      // On garde le reste de la chaîne pour le prochain tour
-      data = data.substring(pos + 1);
-    } else {
-      // C'est la dernière valeur (plus de virgule)
-      valeur = data;
-      data = ""; // On vide pour arrêter la boucle
-    }
-
-    float gain = valeur.toFloat();
-    float freq = 125.0 * pow(2, i);
-    filtres[i].setup(gain, freq, freq * 0.5);
-
-    i++;
-
-    }
-}
-
-
-
-void loopCorrection() {
-  // 1. Vérifier si un bloc de 128 échantillons est prêt
-  if (queue.available() >= 1) {
-    int16_t *inbuffer = queue.readBuffer(); 
-    int16_t *outBuffer = play.getBuffer(); 
-
-    // Lecture de l'état du bouton physique (PIN 0)
-    buttonState = digitalRead(0);
-
-    if (outBuffer != NULL) {
-      for (int i = 0; i < 128; i++) {
-        // Conversion entier -> float (normalisation)
-        float sample = (float)inbuffer[i] / 32768.0f;
-        float filteredSample = sample;
-
-        // Si le bouton est pressé, on applique la cascade des 7 filtres
-        if (buttonState) {
-          for (int j = 0; j < 7; j++) {
-            filteredSample = filtres[j].tick(filteredSample);
-          }
-        }
-
-        // Conversion float -> entier avec sécurité anti-clipping
-        float scaled = filteredSample * 32767.0f;
-        if (scaled > 32767.0f) scaled = 32767.0f;
-        if (scaled < -32768.0f) scaled = -32768.0f;
-        
-        outBuffer[i] = (int16_t)scaled;
-      }
-      
-      // Envoi du bloc complet vers la sortie physique
-      play.playBuffer(); 
-    }
-    
-    // Libération obligatoire de la mémoire du buffer d'entrée
-    queue.freeBuffer(); 
-  }
-}
 
 // ================================================================
 // DIAGNOSTIC

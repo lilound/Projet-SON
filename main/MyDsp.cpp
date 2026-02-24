@@ -1,20 +1,22 @@
 #include "MyDsp.h"
 
+// Un seul constructeur propre
 MyDsp::MyDsp() : AudioStream(1, inputQueueArray), source(44100), earMode(2) {
-  // Réglage par défaut du filtre
-  filter.setup(0.0, 1000.0, 100.0); 
+  _isDiagnostic = false;
+  _mute = true; 
+  for(int i=0; i<7; i++) filters[i].setup(0.0, 1000.0, 100.0); 
 }
 
 void MyDsp::setFreq(float f) { source.setFrequency(f); }
 
-void MyDsp::setFilter(float gain, float centerFreq, float bandwidth) {
-  filter.setup(gain, centerFreq, bandwidth);
+// La méthode avec l'ID pour les 7 filtres
+void MyDsp::setFilter(int id, float gain, float centerFreq, float bandwidth) {
+  if(id >= 0 && id < 7) filters[id].setup(gain, centerFreq, bandwidth);
 }
 
 void MyDsp::setEar(int mode) { earMode = mode; }
 
 void MyDsp::setMute(bool mute) { _mute = mute; }
-
 
 void MyDsp::update(void) {
   audio_block_t* inBlock = receiveReadOnly(0); 
@@ -29,19 +31,22 @@ void MyDsp::update(void) {
   }
 
   for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
-    // 1. On récupère le son du micro TOUJOURS
     float sample = 0;
-    if (inBlock) {
+    
+    // 1. Choix de la source
+    if (_isDiagnostic) {
+      sample = source.tick();
+    } else if (inBlock) {
       sample = (float)inBlock->data[i] / 32768.0f;
     }
 
-    float processedSample;
-    // 2. Si _mute est FAUX, on applique le filtre. 
-    // Si _mute est VRAI, on laisse passer le son intact (Bypass).
+    float processedSample = sample;
+
+    // 2. Application des filtres en cascade (Bypass si _mute est vrai)
     if (!_mute) {
-      processedSample = filter.tick(sample);
-    } else {
-      processedSample = sample; 
+      for(int j = 0; j < 7; j++) {
+        processedSample = filters[j].tick(processedSample);
+      }
     }
     
     // 3. Limitation et Conversion
