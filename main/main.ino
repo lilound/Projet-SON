@@ -89,7 +89,6 @@ void setup() {
   audioShield.volume(0.5);
 
   // Initialisation Diagnostic
-  myDsp.setDiagnostic(true);
   myDsp.setEar(earMode);
   myDsp.setMute(false);
   tempsDebutPalier = millis();
@@ -109,6 +108,7 @@ void loop() {
     commande.trim(); // Nettoie les données reçues
 
     if (commande == "START_DIAG") {
+      myDsp.setDiagnostic(true);
       modeDiagnostic = true;
       modeCorrection = false;
       myDsp.setMute(false); // Active le générateur
@@ -120,6 +120,7 @@ void loop() {
 
     }
     else if (commande == "STOP") {
+      myDsp.setDiagnostic(true);
       modeDiagnostic = false;
       modeCorrection = false;
       myDsp.setMute(true);
