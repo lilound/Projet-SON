@@ -7,6 +7,8 @@ from manage_data import get_data_from_teensy, send_data_to_teensy
 import threading
 import sys
 
+port_COM = 'COM3'
+
 class Window(tk.Tk):
 
     def __init__(self):
@@ -122,14 +124,14 @@ class Window(tk.Tk):
         self.popup_test()
 
         # Données fictives
-        send_data_to_teensy("START_DIAG\n")
+        send_data_to_teensy("START_DIAG\n", port_COM)
         
         thread = threading.Thread(target=self.run_diagnostic_thread)
         thread.daemon = True 
         thread.start()
 
 
-    def finaliser_diagnostic(self):
+    def finaliser_diagnostic(self, donnees):
 
             # on ferme le pop up
             self.popup.destroy()
@@ -173,14 +175,20 @@ class Window(tk.Tk):
         donnees = get_data_from_teensy()
         
         if donnees:
-            if donnees == "":
-                sys.exit(1)
+            if donnees == "STOPPED":
+                self.after(0, self.popup.destroy)
+                self.btn_diag.config(state="normal")
+                self.btn_correction.config(state="normal")
+                self.btn_mode.config(state="normal")
+                self.btn_stop_corr.config(state="normal")
+                return
             else:
                 self.after(0, self.finaliser_diagnostic, donnees) # On continue avec les données
 
 
 
     def stop_diagnostic(self):
+        send_data_to_teensy("STOP\n", port_COM)
         self.popup.destroy()
         self.btn_diag.config(state="normal")
         self.btn_correction.config(state="normal")
@@ -190,13 +198,13 @@ class Window(tk.Tk):
 
 
     def correction(self): 
-        send_data_to_teensy("START_CORR\n")
+        send_data_to_teensy("START_CORR\n", port_COM)
 
 
 
     def stop_correction(self):
         # on réinitialise l'affichage des graphes
-        send_data_to_teensy("STOP\n")
+        send_data_to_teensy("STOP\n", port_COM)
         self.style_graph([self.ax_gauche, self.ax_droite], ["OREILLE GAUCHE", "OREILLE DROITE"], self.fig)
         self.canvas.draw()
 
@@ -256,18 +264,16 @@ class Window(tk.Tk):
         self.canvas_sim.draw()
  
         data = ",".join(map(str, points)) + "\n" # envoie les données sous la forme "0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
-        send_data_to_teensy(data)
+        send_data_to_teensy(data, port_COM)
 
 
 
     def stop_simulation(self):
         # on nettoie le graphe
-        send_data_to_teensy("STOP\n")
+        send_data_to_teensy("STOP\n", port_COM)
         self.style_graph([self.ax_sim], [""], self.fig_sim)
         self.canvas_sim.draw()
-
         
-
 
 
     def change_mode(self):

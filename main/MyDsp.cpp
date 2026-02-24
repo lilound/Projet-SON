@@ -41,13 +41,19 @@ void MyDsp::update(void) {
       sample = (float)inBlock->data[i] / 32768.0f;
     }
 
-    float processedSample = sample;
+    float processedSample = 0;
 
     // 2. Application des filtres en cascade (Bypass si _mute est vrai)
     if (!_mute) {
+      processedSample = sample;
       for(int j = 0; j < 7; j++) {
         processedSample = filters[j].tick(processedSample);
       }
+    }
+    else {
+        // En mode diagnostic, mute doit être un silence total
+        // En mode correction, mute peut être le bypass (sample)
+        processedSample = (_isDiagnostic) ? 0.0f : sample; 
     }
     
     // 3. Limitation et Conversion

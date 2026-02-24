@@ -154,9 +154,17 @@ void loopDiagnostic() {
         modeDiagnostic = false;
         modeCorrection = false;
         myDsp.setMute(true);
+        Serial.println("ABORT_DIAG");
         return;
       }
   }
+
+  // 2. SECURITE : Si le mode a été changé ailleurs
+  if (!modeDiagnostic) {
+    myDsp.setMute(true);
+    return;
+  }
+
   float freqActuelle = frequencesStandard[indexFreq];
 
   if (!enPauseEntreFrequences) {
@@ -211,6 +219,7 @@ void passerAOreilleSuivante() {
     modeDiagnostic = false;
     modeCorrection = true;
     myDsp.setMute(true); // Coupe le générateur
+    myDsp.setDiagnostic(false);
     Serial.println("--- PASSAGE EN MODE CORRECTION ---");
 
     audioShield.inputSelect(AUDIO_INPUT_MIC);
@@ -293,7 +302,7 @@ void lancerDiagnosticZones(Resultat* res, int nbRes, int ear, Intervalle* trous,
 }
 
 void mettreAJourFiltresSimulation(String commande) {
-  int startIndex = 0;
+  unsigned int startIndex = 0;
   for (int i = 0; i < 7; i++) {
     int endIndex = commande.indexOf(',', startIndex);
     
