@@ -1,7 +1,11 @@
+#!/usr/bin/env python3
+
 import serial
 import time
 
-def get_data_from_teensy(port='COM3', baudrate=9600):
+
+port_COM = 'COM3'
+def get_data_from_teensy(port=port_COM, baudrate=9600):
     """
     Se connecte, attend START_DATA, capture tout jusqu'à END_DATA 
     et renvoie la liste complète.
@@ -34,6 +38,6 @@ def get_data_from_teensy(port='COM3', baudrate=9600):
             data_captured.append(line)
 
 
-def send_data_to_teensy(data, port='COM3', baudrate=9600):
+def send_data_to_teensy(data, port=port_COM, baudrate=9600):
     arduino = serial.Serial(port=port, baudrate=baudrate, timeout=.1)
     arduino.write(bytes(data, 'utf-8'))
