@@ -277,7 +277,7 @@ class Window(tk.Tk):
             points = quatrevingts
 
         if "Exposition modérée (Environnement bruyant)" in expo: 
-            points[5] = age*1.3 - 30
+            points[5] = max(5,age*1.3 - 30)
         elif "Exposition forte (Concerts)" in expo: 
             points[5] = age*1.3 - 20
         elif "Exposition dangereuse" in expo: 
@@ -295,7 +295,7 @@ class Window(tk.Tk):
         if bool_ac: 
             data = age + ";"+ ac +";"+ ",".join(map(str, points)) + "\n" # envoie les données sous la forme "20;3000;0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
         else : 
-            ",".join(map(str, points)) + "\n" # envoie les données sous la forme "0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
+            data = ",".join(map(str, points)) + "\n" # envoie les données sous la forme "0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
         send_data_to_teensy(self.arduino, data)
 
 

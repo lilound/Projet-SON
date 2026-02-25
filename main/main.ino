@@ -339,11 +339,11 @@ void mettreAJourFiltresSimulation(String commande) {
     if (endIndex == -1) endIndex = commande.length();
     
     // Extraction du gain
-    float gain = commande.substring(startIndex, endIndex).toFloat();
+    float gain = -commande.substring(startIndex, endIndex).toFloat();
     float freq = frequencesStandard[i]; // On utilise tes fréquences (125, 250...)
     
     // Application au filtre (Q = 1.0 par défaut pour une correction douce)
-    myDsp.setFilter(i, gain, freq, 1.0); 
+    myDsp.setFilter(i, gain, freq, 0.5f); 
     
     startIndex = endIndex + 1;
     if (startIndex >= commande.length()) break; 
