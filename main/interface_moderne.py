@@ -209,7 +209,7 @@ class Window(tk.Tk):
 
 
     def correction(self): 
-        send_data_to_teensy(self.arduino, "START_CORR\n")
+        send_data_to_teensy(self.arduino, self.correction)
 
 
 

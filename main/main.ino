@@ -91,7 +91,7 @@ void setup() {
 
   // Initialisation Diagnostic
   myDsp.setEar(earMode);
-  myDsp.setMute(true);
+  myDsp.setMute(false);
   tempsDebutPalier = millis();
   
 }
@@ -111,25 +111,25 @@ void loop() {
       modeCorrection = false;
       myDsp.setMute(false); // Active le générateur
     } 
-    else if (commande == "START_CORR") {
-      modeDiagnostic = false;
-      modeCorrection = true;
-      myDsp.setMute(false);  // Coupe le générateur
 
-    }
-
-    if (commande == "STOP") {
+    else if (commande == "STOP") {
         myDsp.setDiagnostic(false);
         modeDiagnostic = false;
         modeCorrection = false;
         myDsp.setMute(true);
       }
   
-    
-    // Si la commande contient la liste de points (ex: "10,20,30...")
+    // Si la commande contient la liste de données (ex: "10,20,30...")
     else if (commande.indexOf(',') > 0) {
-       mettreAJourFiltresSimulation(commande); // On traite les gains ici !
+      if (commande.indexOf(';') > 0){
+        mettreAJourFiltresSimulation(commande); // On traite les gains ici 
+        modeDiagnostic = false;
+        modeCorrection = true;
+        myDsp.setMute(false);  // Coupe le générateur}
+      }
+      //else{ GERER LE CAS SIMULATION AVEC ACCOUPHENES}
     }
+
   }
   
 
@@ -137,6 +137,12 @@ void loop() {
   if (modeDiagnostic) {
     loopDiagnostic();
   } 
+  else if (!modeDiagnostic && !modeCorrection) {
+    // Mode "Repos" (Hors Diagnostic et Hors Correction)
+    // On s'assure que le son du micro passe en direct (Bypass)
+    myDsp.setDiagnostic(false); // Source = Micro
+    myDsp.setMute(true);        // Mute=True + Diag=False -> Bypass direct
+  }
 
   
 }
@@ -211,6 +217,7 @@ void passerAOreilleSuivante() {
   } else {
     //lancerDiagnosticZones(sourdG, indG, 1, trousPrecisG, &nbTrousG);
     afficherResultats();
+    Serial.flush(); // attend la fin de l'envoi
     
     // FIN DU DIAGNOSTIC
     modeDiagnostic = false;
