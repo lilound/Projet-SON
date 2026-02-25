@@ -111,10 +111,21 @@ class Window(tk.Tk):
         self.expo_menu = ttk.Combobox(self.sim_params_frame, textvariable=self.expo_var, values=["Normal", "Exposition modérée (Environnement bruyant)", "Exposition forte (Concerts)", "Exposition dangereuse"], state="readonly", font=("Segoe UI", 16), width=40)
         self.expo_menu.pack(padx=20, pady=10)
 
-        # --- Accouphènes ---
-        self.bool_acc = tk.BooleanVar(value = False)
-        self.btn_acc = tk.Checkbutton(self.sim_params_frame, text="ACOUPHÈNE", variable=self.bool_acc, command=self.start_simulation, font=('Segoe UI', 18, 'bold'), bg='#2c3e50', fg='white',selectcolor="#4682B4", activebackground='#34495e', activeforeground='white', bd=0, cursor="hand2",pady=20)
-        self.btn_acc.pack(fill="x", padx=40, pady=20)
+        # --- Section Accouphènes (Radiobuttons) ---
+        tk.Label(self.sim_params_frame, text="Simulation d'acouphène :", font=("Segoe UI", 20), bg='#f5f6f7').pack(pady=(30, 10))
+        
+        self.bool_acc = tk.BooleanVar(value=False)
+        radio_frame = tk.Frame(self.sim_params_frame, bg='#f5f6f7')
+        radio_frame.pack(fill="x", padx=20)
+
+        # Configuration compacte pour tes boutons
+        acc_config = {"variable": self.bool_acc, "command": self.start_simulation, "font": ('Segoe UI', 14, 'bold'), "indicatoron": False, "selectcolor": "#4682B4", "bg": "#2c3e50", "fg": "white", "activebackground": "#34495e", "bd": 0, "pady": 15}
+
+        self.btn_acc_off = tk.Radiobutton(radio_frame, text="SANS ACCOUPHÈNE", value=False, **acc_config)
+        self.btn_acc_off.pack(side="left", expand=True, fill="both", padx=5)
+
+        self.btn_acc_on = tk.Radiobutton(radio_frame, text="AVEC ACCOUPHÈNE", value=True, **acc_config)
+        self.btn_acc_on.pack(side="left", expand=True, fill="both", padx=5)
 
         # Audiogramme correspondant à la simulation à droite
         self.sim_graph_frame = tk.Frame(self.simulation_frame, bg='white', highlightbackground="#dddddd", highlightthickness=1)
@@ -214,7 +225,7 @@ class Window(tk.Tk):
 
 
     def correction(self): 
-        send_data_to_teensy(self.arduino, self.correction)
+        send_data_to_teensy(self.arduino, "START_CORR\n")
 
 
 
