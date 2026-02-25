@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
 
-import serial
-import time
-
-
 
 def get_data_from_teensy(arduino):
     """

@@ -34,33 +34,34 @@ void MyDsp::update(void) {
   for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
     float sample = 0;
     
-    // 1. Choix de la source
+    // 1. On récupère la source (Générateur ou Micro)
     if (_isDiagnostic) {
       sample = source.tick();
     } else if (inBlock) {
       sample = (float)inBlock->data[i] / 32768.0f;
     }
 
-    float processedSample = 0;
+    // 2. On initialise TOUJOURS avec la source
+    float processedSample = sample; 
 
-    // 2. Application des filtres en cascade (Bypass si _mute est vrai)
+    // 3. Application de la logique Mute / Bypass
     if (!_mute) {
-      processedSample = sample;
+      // MODE FILTRÉ (Diagnostic actif ou Correction active)
       for(int j = 0; j < 7; j++) {
         processedSample = filters[j].tick(processedSample);
       }
+    } 
+    else if (_isDiagnostic) {
+      // MODE MUTE en Diagnostic : Silence total entre les bips
+      processedSample = 0.0f; 
     }
-    else {
-        // En mode diagnostic, mute doit être un silence total
-        // En mode correction, mute peut être le bypass (sample)
-        processedSample = (_isDiagnostic) ? 0.0f : sample; 
-    }
-    
-    // 3. Limitation et Conversion
+    // Note : Si !_mute est faux et !_isDiagnostic est faux, 
+    // processedSample garde sa valeur 'sample' (Bypass micro direct).
+
+    // 4. Limitation et Conversion
     processedSample = max(-1.0f, min(1.0f, processedSample));
     int16_t val = (int16_t)(processedSample * 32767.0f);
 
-    // 4. Envoi aux canaux
     outBlockL->data[i] = (earMode == 0 || earMode == 2) ? val : 0;
     outBlockR->data[i] = (earMode == 1 || earMode == 2) ? val : 0;
   }

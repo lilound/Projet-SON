@@ -10,8 +10,8 @@
 #include "Additive.h"
 
 // --- ÉTATS DU SYSTÈME ---
-bool modeDiagnostic = true;   // Commence par le diagnostic
-bool modeCorrection = false;  // S'active après ou via un bouton
+bool modeDiagnostic = false;   
+bool modeCorrection = false; 
 
 // --- OBJETS AUDIO ---
 // Entrée/Sortie Physique
@@ -55,7 +55,7 @@ bool enPauseEntreFrequences = false;
 
 int buttonState = 0;
 int oldButtonState = 0;
-int earMode = 0; 
+int earMode = 2; 
 
 struct Resultat { float frequence; float perteDB; };
 Resultat sourdG[7], sourdD[7];
@@ -91,7 +91,7 @@ void setup() {
 
   // Initialisation Diagnostic
   myDsp.setEar(earMode);
-  myDsp.setMute(false);
+  myDsp.setMute(true);
   tempsDebutPalier = millis();
   
 }
@@ -114,7 +114,7 @@ void loop() {
     else if (commande == "START_CORR") {
       modeDiagnostic = false;
       modeCorrection = true;
-      myDsp.setMute(true);  // Coupe le générateur
+      myDsp.setMute(false);  // Coupe le générateur
 
     }
 
@@ -122,8 +122,7 @@ void loop() {
         myDsp.setDiagnostic(false);
         modeDiagnostic = false;
         modeCorrection = false;
-        myDsp.setMute(false);
-        mettreAJourFiltresSimulation("0,0,0,0,0,0,0");
+        myDsp.setMute(true);
       }
   
     
@@ -138,7 +137,7 @@ void loop() {
   if (modeDiagnostic) {
     loopDiagnostic();
   } 
-  
+
   
 }
 
@@ -154,9 +153,8 @@ void loopDiagnostic() {
         myDsp.setDiagnostic(false);
         modeDiagnostic = false;
         modeCorrection = false;
-        myDsp.setMute(false); // <--- Doit être FALSE pour entendre le micro en bypass
-        mettreAJourFiltresSimulation("0,0,0,0,0,0,0");
-        earMode = 0;
+        myDsp.setMute(true);
+        earMode = 2;
         indexFreq = 0;
         dbPerteHL = 0.0;
         Serial.println("ABORT_DIAG");
@@ -201,9 +199,9 @@ void loopDiagnostic() {
 // ================================================================
 
 void passerAOreilleSuivante() {
-  if (earMode == 0) {
+  if (earMode == 0 || earMode == 2) {
     //lancerDiagnosticZones(sourdD, indD, 0, trousPrecisD, &nbTrousD);
-    earMode = 1;
+    earMode = (earMode % 2) + 1;
     myDsp.setEar(earMode);
     indexFreq = 0;
     dbPerteHL = 0.0;
@@ -214,12 +212,12 @@ void passerAOreilleSuivante() {
     //lancerDiagnosticZones(sourdG, indG, 1, trousPrecisG, &nbTrousG);
     afficherResultats();
     
-    // FIN DU DIAGNOSTIC -> PASSAGE AUTOMATIQUE EN CORRECTION
+    // FIN DU DIAGNOSTIC
     modeDiagnostic = false;
-    modeCorrection = true;
+    modeCorrection = false;
+    earMode = 2;
     myDsp.setMute(true); // Coupe le générateur
-    myDsp.setDiagnostic(false);
-    Serial.println("--- PASSAGE EN MODE CORRECTION ---");
+    
 
     audioShield.inputSelect(AUDIO_INPUT_MIC);
     audioShield.micGain(20); // Remet le gain micro nécessaire pour la correction
