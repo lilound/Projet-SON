@@ -7,6 +7,7 @@ from manage_data import get_data_from_teensy, send_data_to_teensy
 import threading
 import time
 import serial
+from random import randint
 
 
 class Window(tk.Tk):
@@ -110,6 +111,11 @@ class Window(tk.Tk):
         self.expo_menu = ttk.Combobox(self.sim_params_frame, textvariable=self.expo_var, values=["Normal", "Exposition modérée (Environnement bruyant)", "Exposition forte (Concerts)", "Exposition dangereuse"], state="readonly", font=("Segoe UI", 16), width=40)
         self.expo_menu.pack(padx=20, pady=10)
 
+        # --- Accouphènes ---
+        self.bool_acc = tk.BooleanVar(value = False)
+        self.btn_acc = tk.Checkbutton(self.sim_params_frame, text="ACOUPHÈNE", variable=self.bool_acc, command=self.start_simulation, font=('Segoe UI', 18, 'bold'), bg='#2c3e50', fg='white',selectcolor="#4682B4", activebackground='#34495e', activeforeground='white', bd=0, cursor="hand2",pady=20)
+        self.btn_acc.pack(fill="x", padx=40, pady=20)
+
         # Audiogramme correspondant à la simulation à droite
         self.sim_graph_frame = tk.Frame(self.simulation_frame, bg='white', highlightbackground="#dddddd", highlightthickness=1)
         self.sim_graph_frame.pack(side="right", fill="both", expand=True, padx=30, pady=20)
@@ -192,7 +198,6 @@ class Window(tk.Tk):
                 self.btn_stop_corr.config(state="normal")
                 return
             else:
-                self.correction = donnees
                 self.after(0, self.finaliser_diagnostic, donnees) # On continue avec les données
                 
 
@@ -228,6 +233,9 @@ class Window(tk.Tk):
 
         age = self.age_var.get()
         expo = self.expo_var.get()
+        bool_acc = self.bool_acc.get()
+
+        
 
         
         freqs = [125, 250, 500, 1000, 2000, 4000, 8000]
@@ -238,6 +246,7 @@ class Window(tk.Tk):
         soixante = [13, 14, 17, 18, 23, 40, 49]
         soixantedix = [18, 19, 23, 28, 32, 49, 59]
         quatrevingts = [22, 23, 29, 32, 40, 55, 68]
+        accouphenes = [3000, 4000, 6000, 8000]
 
         # A MODIFIER
         
@@ -264,6 +273,7 @@ class Window(tk.Tk):
         elif "Exposition dangereuse" in expo: 
             points[5] = age*1.3 - 10
         
+        acc = accouphenes[randint(0,3)]
 
         # Mise à jour du graphique spécifique à la simulation
         self.ax_sim.set_xticks(freqs)
@@ -271,8 +281,9 @@ class Window(tk.Tk):
         self.ax_sim.plot(freqs, points, color="#e74c3c", marker='x', markersize=8, linewidth=2)
         self.fig_sim.subplots_adjust(left=0.15, right=0.85, top=0.95, bottom=0.25)
         self.canvas_sim.draw()
- 
-        data = ",".join(map(str, points)) + "\n" # envoie les données sous la forme "0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
+        
+        if bool_acc: data = age + ";"+ acc +";"+ ",".join(map(str, points)) + "\n" # envoie les données sous la forme "acc :3000;0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
+        else : ",".join(map(str, points)) + "\n" # envoie les données sous la forme "acc :3000;0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
         send_data_to_teensy(self.arduino, data)
 
 
