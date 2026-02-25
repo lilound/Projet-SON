@@ -5,19 +5,12 @@ import time
 
 
 
-def get_data_from_teensy(port, baudrate=9600):
+def get_data_from_teensy(arduino):
     """
     Se connecte, attend START_DATA, capture tout jusqu'à END_DATA 
     et renvoie la liste complète.
     """
-    try:
-        arduino = serial.Serial(port=port, baudrate=baudrate, timeout=.1)
-        time.sleep(2) 
-        print("Connexion OK. En attente du signal...")
-    except Exception as e:
-        print(f"Erreur port : {e}")
-        return []
-
+    
     recording = False
     data_captured = []
 
@@ -44,7 +37,6 @@ def get_data_from_teensy(port, baudrate=9600):
         
 
 
-def send_data_to_teensy(data, port, baudrate=9600):
+def send_data_to_teensy(arduino, data):
     print(data)
-    arduino = serial.Serial(port=port, baudrate=baudrate, timeout=.1)
     arduino.write(bytes(data, 'utf-8'))

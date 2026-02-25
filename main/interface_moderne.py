@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 import tkinter as tk
-from tkinter import ttk, messagebox
+from tkinter import ttk
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from manage_data import get_data_from_teensy, send_data_to_teensy
 import threading
-import sys
+import time
+import serial
 
-port_COM = 'COM3'
 
 class Window(tk.Tk):
 
@@ -29,7 +29,16 @@ class Window(tk.Tk):
         # Effet au survol
         self.style.map('Rounded.TButton', background=[('active', '#34495e'), ('pressed', '#1a252f')])
 
+        try:
+            self.arduino = serial.Serial(port='COM3', baudrate=9600, timeout=.1)
+            time.sleep(2) 
+            print("Connexion OK. En attente du signal...")
+        except Exception as e:
+            print(f"Erreur port : {e}")
+            return []
+        
         self.create_widgets()
+
 
         # Initialisation Matplotlib
         self.fig, (self.ax_gauche, self.ax_droite) = plt.subplots(1, 2, figsize=(10, 5))
@@ -124,7 +133,7 @@ class Window(tk.Tk):
         self.popup_test()
 
         # Données fictives
-        send_data_to_teensy("START_DIAG\n", port_COM)
+        send_data_to_teensy(self.arduino, "START_DIAG\n")
         
         thread = threading.Thread(target=self.run_diagnostic_thread)
         thread.daemon = True 
@@ -172,7 +181,7 @@ class Window(tk.Tk):
 
     def run_diagnostic_thread(self):
         # Cette fonction tourne en arrière-plan
-        donnees = get_data_from_teensy(port_COM)
+        donnees = get_data_from_teensy(self.arduino)
         
         if donnees:
             if donnees == "STOPPED":
@@ -184,11 +193,12 @@ class Window(tk.Tk):
                 return
             else:
                 self.after(0, self.finaliser_diagnostic, donnees) # On continue avec les données
+                
 
 
 
     def stop_diagnostic(self):
-        send_data_to_teensy("STOP\n", port_COM)
+        send_data_to_teensy(self.arduino, "STOP\n")
         self.popup.destroy()
         self.btn_diag.config(state="normal")
         self.btn_correction.config(state="normal")
@@ -198,13 +208,13 @@ class Window(tk.Tk):
 
 
     def correction(self): 
-        send_data_to_teensy("START_CORR\n", port_COM)
+        send_data_to_teensy(self.arduino, "START_CORR\n")
 
 
 
     def stop_correction(self):
         # on réinitialise l'affichage des graphes
-        send_data_to_teensy("STOP\n", port_COM)
+        send_data_to_teensy(self.arduino, "STOP\n")
         self.style_graph([self.ax_gauche, self.ax_droite], ["OREILLE GAUCHE", "OREILLE DROITE"], self.fig)
         self.canvas.draw()
 
@@ -264,13 +274,13 @@ class Window(tk.Tk):
         self.canvas_sim.draw()
  
         data = ",".join(map(str, points)) + "\n" # envoie les données sous la forme "0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
-        send_data_to_teensy(data, port_COM)
+        send_data_to_teensy(self.arduino, data)
 
 
 
     def stop_simulation(self):
         # on nettoie le graphe
-        send_data_to_teensy("STOP\n", port_COM)
+        send_data_to_teensy(self.arduino,"STOP\n")
         self.style_graph([self.ax_sim], [""], self.fig_sim)
         self.canvas_sim.draw()
         

@@ -122,7 +122,7 @@ void loop() {
         myDsp.setDiagnostic(false);
         modeDiagnostic = false;
         modeCorrection = false;
-        myDsp.setMute(true);
+        myDsp.setMute(false);
       }
   
     
@@ -137,6 +137,9 @@ void loop() {
   if (modeDiagnostic) {
     loopDiagnostic();
   } 
+  if (!modeDiagnostic && !modeCorrection){
+    mettreAJourFiltresSimulation("0,0,0,0,0,0,0");
+  }
   
   
 }
@@ -154,15 +157,12 @@ void loopDiagnostic() {
         modeDiagnostic = false;
         modeCorrection = false;
         myDsp.setMute(true);
+        earMode = 0;
+        indexFreq = 0;
+        dbPerteHL = 0.0;
         Serial.println("ABORT_DIAG");
         return;
       }
-  }
-
-  // 2. SECURITE : Si le mode a été changé ailleurs
-  if (!modeDiagnostic) {
-    myDsp.setMute(true);
-    return;
   }
 
   float freqActuelle = frequencesStandard[indexFreq];
