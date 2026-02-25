@@ -117,11 +117,12 @@ void loop() {
         modeDiagnostic = false;
         modeCorrection = false;
         myDsp.setMute(true);
+        Serial.println("ABORT_DIAG");
       }
   
     // Si la commande contient la liste de données (ex: "10,20,30...")
     else if (commande.indexOf(',') > 0) {
-      if (commande.indexOf(';') > 0){
+      if (!(commande.indexOf(';') > 0)){
         mettreAJourFiltresSimulation(commande); // On traite les gains ici 
         modeDiagnostic = false;
         modeCorrection = true;
@@ -207,7 +208,8 @@ void loopDiagnostic() {
 void passerAOreilleSuivante() {
   if (earMode == 0 || earMode == 2) {
     //lancerDiagnosticZones(sourdD, indD, 0, trousPrecisD, &nbTrousD);
-    earMode = (earMode % 2) + 1;
+    if (earMode == 0){earMode = 1;}
+    else{earMode = 0;}
     myDsp.setEar(earMode);
     indexFreq = 0;
     dbPerteHL = 0.0;
