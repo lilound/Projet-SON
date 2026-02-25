@@ -212,8 +212,8 @@ void loopDiagnostic() {
   } 
   else if (!buttonState) {
     if (oldButtonState == 1) oldButtonState = 0;
-    if (millis() - tempsDebutPalier > 4000) {
-      dbPerteHL += 10.0; 
+    if (millis() - tempsDebutPalier > 5000) {
+      dbPerteHL += 20.0; 
       if (dbPerteHL > 61.0) { 
         enregistrerResultat(freqActuelle, 70.0);
         preparerFrequenceSuivante();
