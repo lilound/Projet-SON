@@ -250,38 +250,38 @@ class Window(tk.Tk):
         
         freqs = [125, 250, 500, 1000, 2000, 4000, 8000]
         vingt = [0, 0, 0, 0, 0, 3, 8]
-        trente = [3, 3, 3, 4, 5, 13, 18]
-        quarante = [7, 7, 7, 8, 9, 22, 26]
-        cinquante = [10, 10, 12, 13, 14, 30, 33]
-        soixante = [13, 14, 17, 18, 23, 40, 49]
-        soixantedix = [18, 19, 23, 28, 32, 49, 59]
-        quatrevingts = [22, 23, 29, 32, 40, 55, 68]
+        trente = [-3, -3, -3, -4, -5, -13, -18]
+        quarante = [-7, -7, -7, -8, -9, -22, -26]
+        cinquante = [-10, -10, -12, -13, -14, -30, -33]
+        soixante = [-13, -14, -17, -18, -23, -40, -49]
+        soixantedix = [-18, -19, -23, -28, -32, -49, -59]
+        quatrevingts = [-22, -23, -29, -32, -40, -55, -68]
         acouphenes = [3000, 4000, 6000, 8000]
 
         # A MODIFIER
         
 
         if age == 20:
-            points = vingt
+            points = vingt.copy()
         elif age == 30:
-            points = trente
+            points = trente.copy()
         elif age == 40:     
-            points = quarante
+            points = quarante.copy()
         elif age == 50:
-            points = cinquante
+            points = cinquante.copy()
         elif age == 60:
-            points = soixante
+            points = soixante.copy()
         elif age == 70:
-            points = soixantedix
+            points = soixantedix.copy()
         else:
-            points = quatrevingts
+            points = quatrevingts.copy()
 
         if "Exposition modérée (Environnement bruyant)" in expo: 
-            points[5] = max(5,age*1.3 - 30)
+            points[5] = min(-5,-age*1.3 + 30)
         elif "Exposition forte (Concerts)" in expo: 
-            points[5] = age*1.3 - 20
+            points[5] = -age*1.3 + 20
         elif "Exposition dangereuse" in expo: 
-            points[5] = age*1.3 - 10
+            points[5] = -age*1.3 + 10
         
         ac = acouphenes[randint(0,3)]
 
@@ -292,10 +292,13 @@ class Window(tk.Tk):
         self.fig_sim.subplots_adjust(left=0.15, right=0.85, top=0.95, bottom=0.25)
         self.canvas_sim.draw()
         
+        points_str = ",".join(map(str, points))
+
         if bool_ac: 
-            data = age + ";"+ ac +";"+ ",".join(map(str, points)) + "\n" # envoie les données sous la forme "20;3000;0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
+            # Format attendu par ajouterAcouphene sur Teensy: "20;4000;-10,-20..."
+            data = f"{age};{ac};{points_str}\n" 
         else : 
-            data = ",".join(map(str, points)) + "\n" # envoie les données sous la forme "0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
+            data = f"{points_str}\n" # envoie les données sous la forme "0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
         send_data_to_teensy(self.arduino, data)
 
 

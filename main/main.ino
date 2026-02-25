@@ -4,8 +4,7 @@
 #include <SD.h>
 #include <SerialFlash.h>
 
-// Inclusion de tes classes personnalisées
-#include "Peak.h"
+#include "Filters.h"
 #include "MyDsp.h"
 #include "Additive.h"
 
@@ -13,35 +12,31 @@
 bool modeDiagnostic = false;   
 bool modeCorrection = false; 
 
-
 // --- OBJETS AUDIO ---
-// Entrée/Sortie Physique
 AudioInputI2S            in;
 AudioOutputI2S           out;
 AudioControlSGTL5000     audioShield;
 
-// Objets pour le DIAGNOSTIC (pe_v3.ino)
 MyDsp                    myDsp; 
+Filters                  myFilters; // Un seul objet gère tout (7 bandes, stéréo)
 
-// Connexions Audio
-// Chemin 1 : Diagnostic
-AudioConnection          patchCordDiag1(myDsp, 0, out, 0);
-AudioConnection          patchCordDiag2(myDsp, 1, out, 1);
+// --- CONNEXIONS AUDIO ---
+AudioConnection          patchCordIn(in, 0, myDsp, 0); 
+AudioConnection          patchCordToFiltL(myDsp, 0, myFilters, 0);
+AudioConnection          patchCordToFiltR(myDsp, 1, myFilters, 1);
+AudioConnection          patchCordOutL(myFilters, 0, out, 0);
+AudioConnection          patchCordOutR(myFilters, 1, out, 1);
 
-// Chemin 2 : Correction 
-AudioConnection          patchCordCorr1(in, 0, myDsp, 0);
-
-
-// --- VARIABLES GLOBALES (Issues des deux codes) ---
-
-// Variables de diagnostic
+// --- VARIABLES GLOBALES ---
 float frequencesStandard[] = {125, 250, 500, 1000, 2000, 4000, 8000};
 int indexFreq = 0;
 int totalFreq = 7;
 float seuilDiagnosticdB = 40.0; 
 float dbPerteHL = 0.0; 
+float derniereDbEnvoyee = -100.0; // Pour éviter de saturer le port série
 unsigned long tempsDebutPalier = 0;
 bool enPauseEntreFrequences = false;
+unsigned long momentFinPause = 0;
 
 int buttonState = 0;
 int oldButtonState = 0;
@@ -63,147 +58,147 @@ void passerAOreilleSuivante();
 void afficherResultats();
 void lancerDiagnosticZones(Resultat* resultats, int nbRes, int ear, Intervalle* trous, int* nbTrous);
 void mettreAJourFiltresSimulation(String commande);
+void ajouterAcouphene(String commande);
 
 // ================================================================
 // SETUP
 // ================================================================
 void setup() {
   Serial.begin(9600);
-  pinMode(0, INPUT);
-  
-  // Alloue de la mémoire pour les deux modes
-  AudioMemory(20); 
-  
+  pinMode(0, INPUT_PULLDOWN); // Sécurise l'état du bouton
+   
   audioShield.enable();
   audioShield.inputSelect(AUDIO_INPUT_MIC);
   audioShield.micGain(20); 
   audioShield.volume(0.5);
 
-  // Initialisation Diagnostic
   myDsp.setEar(earMode);
-  myDsp.setMute(false);
-  tempsDebutPalier = millis();
+  myDsp.setMute(true); 
   
+  AudioMemory(40);
+
+  // Reset des filtres Faust
+  for(int i=0; i<7; i++) {
+    myFilters.setParamValue(("/Filters/level_0" + String(i)).c_str(), 0.0);
+    myFilters.setParamValue(("/Filters/level_1" + String(i)).c_str(), 0.0);
+  }
 }
 
 // ================================================================
-// GESTION DES MESSAGES
+// LOOP PRINCIPALE
 // ================================================================
 void loop() {
-  // --- 1. LECTURE DES COMMANDES PYTHON ---
   if (Serial.available() > 0) {
     String commande = Serial.readStringUntil('\n');
-    commande.trim(); // Nettoie les données reçues
+    commande.trim();
 
     if (commande == "START_DIAG") {
       myDsp.setDiagnostic(true);
       modeDiagnostic = true;
       modeCorrection = false;
-      myDsp.setMute(false); // Active le générateur
-      audioShield.volume(0.5);
+      myDsp.setMute(false); 
       indexFreq = 0;
       dbPerteHL = 0.0;
+      derniereDbEnvoyee = -100.0;
       earMode = 0;
       myDsp.setEar(earMode);
       enPauseEntreFrequences = false;
       tempsDebutPalier = millis();
     } 
-
     else if (commande == "STOP") {
         myDsp.setDiagnostic(false);
         modeDiagnostic = false;
         modeCorrection = false;
         myDsp.setMute(true);
-        Serial.println("ABORT_DIAG");
+        myDsp.setAcouphene(false, 0, 0);
         earMode = 2;
         myDsp.setEar(earMode);
-        indexFreq = 0;
-        dbPerteHL = 0.0;
         audioShield.volume(0.5);
-      }
-  
-    // Si la commande contient la liste de données (ex: "10,20,30...")
+        Serial.println("ABORT_DIAG");
+    }
     else if (commande.indexOf(',') > 0) {
-      if (!(commande.indexOf(';') > 0)){
-        mettreAJourFiltresSimulation(commande); // On traite les gains ici 
+      if (commande.indexOf(';') < 0){
+        mettreAJourFiltresSimulation(commande); 
         modeDiagnostic = false;
         modeCorrection = true;
-        myDsp.setMute(false);  // Coupe le générateur}
+        myDsp.setMute(false); 
       }
-      else{ 
+      else { 
         ajouterAcouphene(commande);
       }
     }
-
   }
-  
 
-  // --- 2. EXÉCUTION DES MODES ---
   if (modeDiagnostic) {
     loopDiagnostic();
   } 
   else if (modeCorrection) {
-    // Force l'écoute du micro avec les filtres
     myDsp.setDiagnostic(false); 
-    myDsp.setMute(false);
+    myDsp.setMute(false); 
   }
-  else if (!modeDiagnostic && !modeCorrection) {
-    // Mode "Repos" (Hors Diagnostic et Hors Correction)
-    // On s'assure que le son du micro passe en direct (Bypass)
-    myDsp.setDiagnostic(false); // Source = Micro
-    myDsp.setMute(true);        // Mute=True + Diag=False -> Bypass direct
+  else {
+    myDsp.setDiagnostic(false);
+    myDsp.setMute(true); 
   }
-
-  
 }
 
-
 // ================================================================
-// DIAGNOSTIC
+// LOGIQUE DIAGNOSTIC
 // ================================================================
 void loopDiagnostic() {
+  // 1. GESTION DU STOP (Lecture réelle de la commande)
   if (Serial.available() > 0) {
     String commande = Serial.readStringUntil('\n');
-    commande.trim(); // Nettoie les données reçues
+    commande.trim();
+    
     if (commande == "STOP") {
         myDsp.setDiagnostic(false);
         modeDiagnostic = false;
-        modeCorrection = false;
         myDsp.setMute(true);
         earMode = 2;
         myDsp.setEar(earMode);
-        indexFreq = 0;
-        dbPerteHL = 0.0;
-        audioShield.volume(0.5);
         Serial.println("ABORT_DIAG");
-        return;
-      }
+        return; // On sort immédiatement de la fonction
+    }
   }
 
-  float freqActuelle = frequencesStandard[indexFreq];
+  // 2. Gestion de la pause entre bips (Non-bloquant)
+  if (enPauseEntreFrequences) {
+    if (millis() >= momentFinPause) {
+      enPauseEntreFrequences = false;
+      tempsDebutPalier = millis();
+      derniereDbEnvoyee = -100.0; 
+      myDsp.setMute(false); 
+    } else {
+      return; 
+    }
+  }
 
-  if (!enPauseEntreFrequences) {
-    myDsp.setFreq(freqActuelle);
-    myDsp.setFilter(0,0.0f, freqActuelle, 1.0f);
-    audioShield.volume(dbToLin(dbPerteHL)); 
-    
+  // 3. Logique sonore
+  float freqActuelle = frequencesStandard[indexFreq];
+  myDsp.setFreq(freqActuelle);
+  audioShield.volume(dbToLin(dbPerteHL)); 
+
+  // Envoi au PC uniquement si changement
+  if (dbPerteHL != derniereDbEnvoyee) {
     Serial.print(freqActuelle); Serial.print(" ");
     Serial.println(-dbPerteHL); 
+    derniereDbEnvoyee = dbPerteHL;
   }
 
+  // 4. Lecture du bouton
   buttonState = digitalRead(0);
-
-  if (buttonState && !oldButtonState) {
+  if (buttonState == HIGH && oldButtonState == LOW) {
     myDsp.setMute(true);
     enregistrerResultat(freqActuelle, dbPerteHL);
     preparerFrequenceSuivante();
-    oldButtonState = 1;
+    oldButtonState = HIGH;
   } 
-  else if (!buttonState) {
-    if (oldButtonState == 1) oldButtonState = 0;
-    if (millis() - tempsDebutPalier > 5000) {
-      dbPerteHL += 20.0; 
-      if (dbPerteHL > 61.0) { 
+  else if (buttonState == LOW) {
+    oldButtonState = LOW;
+    if (millis() - tempsDebutPalier > 4000) { 
+      dbPerteHL += 10.0; 
+      if (dbPerteHL > 70.0) { 
         enregistrerResultat(freqActuelle, 70.0);
         preparerFrequenceSuivante();
       }
@@ -213,12 +208,77 @@ void loopDiagnostic() {
 }
 
 // ================================================================
-// FONCTIONS UTILITAIRES (Diagnostic)
+// FONCTIONS FILTRES & SIMULATION
 // ================================================================
+void mettreAJourFiltresSimulation(String commande) {
+  unsigned int startIndex = 0;
+  for (int i = 0; i < 7; i++) {
+    int endIndex = commande.indexOf(',', startIndex);
+    if (endIndex == -1) endIndex = commande.length();
+    float gain = commande.substring(startIndex, endIndex).toFloat();
+    
+    // SÉCURITÉ : Faust amplifie si gain > 0. On force en négatif pour simuler une perte.
+    if (gain > 0) gain = -gain; 
+
+    myFilters.setParamValue(("/Filters/level_0" + String(i)).c_str(), gain);
+    myFilters.setParamValue(("/Filters/level_1" + String(i)).c_str(), gain);
+    
+    startIndex = endIndex + 1;
+    if (startIndex >= commande.length()) break;
+  }
+  Serial.println("FILTRES_OK");
+}
+
+void ajouterAcouphene(String commande){ 
+  int iAge = commande.indexOf(';');
+  float age = commande.substring(0, iAge).toFloat();
+  int iFreqAcouphene = commande.indexOf(';', iAge + 1);
+  float freqAcouphene = commande.substring(iAge + 1, iFreqAcouphene).toFloat();
+  String gains = commande.substring(iFreqAcouphene + 1);
+
+  mettreAJourFiltresSimulation(gains);
+  
+  modeCorrection = true; 
+  modeDiagnostic = false;
+  myDsp.setMute(false);
+  
+  if (freqAcouphene > 0) {
+    myDsp.setAcouphene(true, freqAcouphene, age);
+    Serial.println("ACOUPHENE_ON");
+  } else {
+    myDsp.setAcouphene(false, 0, 0);
+  }
+}
+
+// ================================================================
+// UTILITAIRES
+// ================================================================
+float dbToLin(float dbPerte) {
+  float gainBase = -60.0; 
+  float dbReel = gainBase + dbPerte;
+  float amplitudeMax = 0.15; 
+  return amplitudeMax * pow(10.0, dbReel / 20.0);
+}
+
+void enregistrerResultat(float f, float db) {
+  if (earMode == 0) { sourdD[indD++] = {f, db}; } 
+  else { sourdG[indG++] = {f, db}; }
+}
+
+void preparerFrequenceSuivante() {
+  myDsp.setMute(true);
+  enPauseEntreFrequences = true;
+  momentFinPause = millis() + 600; // Pause courte de 0.6s
+  indexFreq++;
+  if (indexFreq >= totalFreq) {
+    passerAOreilleSuivante();
+  } else {
+    dbPerteHL = 0.0; 
+  }
+}
 
 void passerAOreilleSuivante() {
   if (earMode == 0) {
-    //lancerDiagnosticZones(sourdD, indD, 0, trousPrecisD, &nbTrousD);
     earMode = 1;    
     myDsp.setEar(earMode);
     indexFreq = 0;
@@ -227,53 +287,15 @@ void passerAOreilleSuivante() {
     myDsp.setMute(false);
     tempsDebutPalier = millis();
   } else {
-    //lancerDiagnosticZones(sourdG, indG, 1, trousPrecisG, &nbTrousG);
     afficherResultats();
-    Serial.flush(); // attend la fin de l'envoi
-    
-    // FIN DU DIAGNOSTIC
+    Serial.flush(); 
     modeDiagnostic = false;
     modeCorrection = false;
     earMode = 2;
     myDsp.setEar(earMode);
-
-    myDsp.setMute(true); // Coupe le générateur
-    
-
-    audioShield.inputSelect(AUDIO_INPUT_MIC);
-    audioShield.micGain(20); // Remet le gain micro nécessaire pour la correction
-    audioShield.volume(0.5);  // Monte le volume général comme dans mic.ino
-    }
-}
-
-// Garder ici toutes tes autres fonctions : dbToLin, enregistrerResultat, lancerDiagnosticZones, etc.
-// (Elles restent identiques à ton code d'origine)
-
-float dbToLin(float dbPerte) {
-  float gainBase = -60.0; 
-  float dbReel = gainBase + dbPerte;
-  float amplitudeMax = 0.15; 
-  return amplitudeMax * pow(10.0, dbReel / 20.0);
-}
-
-void preparerFrequenceSuivante() {
-  myDsp.setMute(true);
-  enPauseEntreFrequences = true;
-  delay(2000); 
-  indexFreq++;
-  if (indexFreq >= totalFreq) {
-    passerAOreilleSuivante();
-  } else {
-    dbPerteHL = 0.0; 
-    enPauseEntreFrequences = false;
-    myDsp.setMute(false);
-    tempsDebutPalier = millis();
+    myDsp.setMute(true); 
+    audioShield.volume(0.5);
   }
-}
-
-void enregistrerResultat(float f, float db) {
-  if (earMode == 0) { sourdD[indD++] = {f, db}; } 
-  else { sourdG[indG++] = {f, db}; }
 }
 
 void afficherResultats() {
@@ -284,78 +306,4 @@ void afficherResultats() {
     Serial.println(sourdG[i].perteDB);
   }
   Serial.println("END_DATA");
-}
-
-void lancerDiagnosticZones(Resultat* res, int nbRes, int ear, Intervalle* trous, int* nbTrous) {
-  myDsp.setEar(ear);
-  for (int i = 0; i < nbRes; i++) {
-    if (res[i].perteDB >= seuilDiagnosticdB) {
-      float fBase = res[i].frequence / 1.414;
-      float fHaut = res[i].frequence * 1.414;
-      float debutTrou = 0;
-      bool dansLeTrou = false;
-      audioShield.volume(dbToLin(res[i].perteDB)); 
-
-      for (float f = fBase; f <= fHaut; f *= 1.1) {
-        myDsp.setFreq(f);
-        myDsp.setMute(false);
-        unsigned long start = millis();
-        bool entendu = false;
-        while(millis() - start < 2000) {
-          if(digitalRead(0) == HIGH) { entendu = true; break; }
-        }
-        if (!entendu && !dansLeTrou) {
-          debutTrou = f; dansLeTrou = true;
-        } else if (entendu && dansLeTrou) {
-          trous[*nbTrous] = {debutTrou, f};
-          (*nbTrous)++;
-          dansLeTrou = false;
-        }
-        myDsp.setMute(true);
-        delay(200);
-      }
-    }
-  }
-  myDsp.setMute(true);
-}
-
-void mettreAJourFiltresSimulation(String commande) {
-  unsigned int startIndex = 0;
-  for (int i = 0; i < 7; i++) {
-    int endIndex = commande.indexOf(',', startIndex);
-    
-    // Si on ne trouve plus de virgule, on prend la fin de la chaîne
-    if (endIndex == -1) endIndex = commande.length();
-    
-    // Extraction du gain
-    float gain = commande.substring(startIndex, endIndex).toFloat();
-    float freq = frequencesStandard[i]; // On utilise tes fréquences (125, 250...)
-    
-    // Application au filtre (Q = 1.0 par défaut pour une correction douce)
-    myDsp.setFilter(i, -3.0, freq, 1.5); 
-    
-    startIndex = endIndex + 1;
-    if (startIndex >= commande.length()) break; 
-  }
-  Serial.println("FILTRES_OK"); // Petit feedback pour Python
-}
-
-void ajouterAcouphene(String commande){ 
-  int iAge = commande.indexOf(';');
-  float age = commande.substring(0, iAge).toFloat();
-
-  // 2. Trouver le deuxième ';' (après la fréquence)
-  int iFreqAcouphene = commande.indexOf(';', iAge + 1);
-  float freqAcouphene = commande.substring(iAge + 1, iFreqAcouphene).toFloat();
-
-  // 3. Extraire le reste (les gains) pour les envoyer aux filtres
-  String gains = commande.substring(iFreqAcouphene + 1);
-
-  // Appel de la fonction des filtres avec la partie restante
-  mettreAJourFiltresSimulation(gains);
-  if (freqAcouphene > 0) {
-    myDsp.setAcouphene(true, freqAcouphene, age);
-    Serial.println("ACOUPHENE_ON");
-  }
-
 }

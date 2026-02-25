@@ -1,46 +1,32 @@
 #include "MyDsp.h"
 #include "Additive.h"
 
-// Un seul constructeur propre
 MyDsp::MyDsp() : AudioStream(1, inputQueueArray), source(44100), earMode(2), oscilloAcouphene(44100){
   _isDiagnostic = false;
   _mute = true; 
   acoupheneActif = false;
-  for(int i=0; i<7; i++)
-    filters[i].setup(0.0, 1000.0, 1.5);  // Q = 1
+  // Note : On n'initialise plus filters[i] ici car on utilise Filters.h
 }
 
 void MyDsp::setFreq(float f) { source.setFrequency(f); }
 
-// La méthode avec l'ID pour les 7 filtres
+// Cette méthode devient optionnelle car Filters.h gère l'égalisation
 void MyDsp::setFilter(int id, float gain, float centerFreq, float bandwidth) {
-  if(id >= 0 && id < 7) filters[id].setup(gain, centerFreq, bandwidth);
+  // Optionnel : vide ou redirection vers myFilters si vous avez accès à l'instance
 }
 
 void MyDsp::setEar(int mode) { earMode = mode; }
-
 void MyDsp::setMute(bool mute) { _mute = mute; }
 void MyDsp::setDiagnostic(bool diagnostic) { _isDiagnostic = diagnostic; }
-void MyDsp::setAcouphene(bool actif, float freq = 0, float age = 20) {
+
+void MyDsp::setAcouphene(bool actif, float freq, float age) {
     acoupheneActif = actif;
     if (actif) {
         oscilloAcouphene.setFrequency(freq);
         float nouveauGain = 0.02 + ((age - 20) * 0.002);
-        // Sécurité : on plafonne le gain à 0.15 pour ne pas abîmer les oreilles
         if (nouveauGain > 0.15) nouveauGain = 0.15;
         oscilloAcouphene.setGain(nouveauGain);
     }
-}
-
-float MyDsp::tick(float input) {
-    float sortie = input; // Le son micro passé par tes filtres
-    
-    if (acoupheneActif) {
-        // On additionne le sifflement d'Additive au signal
-        sortie += oscilloAcouphene.tick();
-    }
-    
-    return sortie;
 }
 
 void MyDsp::update(void) {
@@ -58,27 +44,29 @@ void MyDsp::update(void) {
   for (int i = 0; i < AUDIO_BLOCK_SAMPLES; i++) {
     float sample = 0;
     
-    // 1. Choix de la source
+    // 1. Choix de la source principale
     if (_isDiagnostic) {
-      sample = source.tick();
+      sample = source.tick(); // Les bips du test
     } else if (inBlock) {
-      sample = (float)inBlock->data[i] / 32768.0f;
+      sample = (float)inBlock->data[i] / 32768.0f; // Le micro
     }
 
+    // 2. Gestion du Bypass (Mute)
+    // Si _mute est vrai, on laisse passer le son brut (Bypass vers Filters.h)
+    // Si _mute est faux, on traite
     float processedSample = sample;
 
-    // 2. Application des filtres en cascade (Bypass si _mute est vrai)
-    if (!_mute) {
-      for(int j = 0; j < 7; j++) {
-        processedSample = filters[j].tick(processedSample);
-      }
+    // 3. Ajout de l'acouphène (Sifflement constant)
+    if (acoupheneActif) {
+        processedSample += oscilloAcouphene.tick();
     }
     
-    // 3. Limitation et Conversion
+    // 4. Limitation et Conversion
     processedSample = max(-1.0f, min(1.0f, processedSample));
     int16_t val = (int16_t)(processedSample * 32767.0f);
 
-    // 4. Envoi aux canaux
+    // 5. Envoi aux canaux
+    // (Le bloc Filters.h recevra ce signal pour appliquer l'égalisation finale)
     outBlockL->data[i] = (earMode == 0 || earMode == 2) ? val : 0;
     outBlockR->data[i] = (earMode == 1 || earMode == 2) ? val : 0;
   }
