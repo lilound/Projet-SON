@@ -192,6 +192,7 @@ class Window(tk.Tk):
                 self.btn_stop_corr.config(state="normal")
                 return
             else:
+                self.correction = donnees
                 self.after(0, self.finaliser_diagnostic, donnees) # On continue avec les données
                 
 

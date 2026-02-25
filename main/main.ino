@@ -123,6 +123,7 @@ void loop() {
         modeDiagnostic = false;
         modeCorrection = false;
         myDsp.setMute(false);
+        mettreAJourFiltresSimulation("0,0,0,0,0,0,0");
       }
   
     
@@ -137,9 +138,6 @@ void loop() {
   if (modeDiagnostic) {
     loopDiagnostic();
   } 
-  if (!modeDiagnostic && !modeCorrection){
-    mettreAJourFiltresSimulation("0,0,0,0,0,0,0");
-  }
   
   
 }
@@ -156,7 +154,8 @@ void loopDiagnostic() {
         myDsp.setDiagnostic(false);
         modeDiagnostic = false;
         modeCorrection = false;
-        myDsp.setMute(true);
+        myDsp.setMute(false); // <--- Doit être FALSE pour entendre le micro en bypass
+        mettreAJourFiltresSimulation("0,0,0,0,0,0,0");
         earMode = 0;
         indexFreq = 0;
         dbPerteHL = 0.0;
