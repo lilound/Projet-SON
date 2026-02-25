@@ -144,6 +144,9 @@ class Window(tk.Tk):
         self.style_graph([self.ax_gauche, self.ax_droite], ["OREILLE GAUCHE", "OREILLE DROITE"], self.fig)
         self.canvas.draw()
 
+        # Nettoyage du tampon pour que le popup ne voie pas un ancien message stop
+        self.arduino.reset_input_buffer()
+
         # Affichage du popup
         self.popup_test()
 
@@ -228,10 +231,8 @@ class Window(tk.Tk):
 
 
     def stop_correction(self):
-        # on réinitialise l'affichage des graphes
         send_data_to_teensy(self.arduino, "STOP\n")
-        self.style_graph([self.ax_gauche, self.ax_droite], ["OREILLE GAUCHE", "OREILLE DROITE"], self.fig)
-        self.canvas.draw()
+    
 
 
 
@@ -291,8 +292,10 @@ class Window(tk.Tk):
         self.fig_sim.subplots_adjust(left=0.15, right=0.85, top=0.95, bottom=0.25)
         self.canvas_sim.draw()
         
-        if bool_ac: data = age + ";"+ ac +";"+ ",".join(map(str, points)) + "\n" # envoie les données sous la forme "20;3000;0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
-        else : ",".join(map(str, points)) + "\n" # envoie les données sous la forme "0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
+        if bool_ac: 
+            data = age + ";"+ ac +";"+ ",".join(map(str, points)) + "\n" # envoie les données sous la forme "20;3000;0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
+        else : 
+            ",".join(map(str, points)) + "\n" # envoie les données sous la forme "0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
         send_data_to_teensy(self.arduino, data)
 
 

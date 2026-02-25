@@ -20,11 +20,9 @@ def get_data_from_teensy(arduino):
             
         elif line == "END_DATA":
             print("Capture terminée.")
-            arduino.close() # On libère le port pour les futurs usages
             return data_captured # On sort de la fonction avec les données
             
         elif line == "ABORT_DIAG":
-            arduino.close()
             return "STOPPED"
             
         elif recording and line:

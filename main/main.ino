@@ -110,6 +110,13 @@ void loop() {
       modeDiagnostic = true;
       modeCorrection = false;
       myDsp.setMute(false); // Active le générateur
+      audioShield.volume(0.5);
+      indexFreq = 0;
+      dbPerteHL = 0.0;
+      earMode = 0;
+      myDsp.setEar(earMode);
+      enPauseEntreFrequences = false;
+      tempsDebutPalier = millis();
     } 
 
     else if (commande == "STOP") {
@@ -118,6 +125,11 @@ void loop() {
         modeCorrection = false;
         myDsp.setMute(true);
         Serial.println("ABORT_DIAG");
+        earMode = 2;
+        myDsp.setEar(earMode);
+        indexFreq = 0;
+        dbPerteHL = 0.0;
+        audioShield.volume(0.5);
       }
   
     // Si la commande contient la liste de données (ex: "10,20,30...")
@@ -138,6 +150,11 @@ void loop() {
   if (modeDiagnostic) {
     loopDiagnostic();
   } 
+  else if (modeCorrection) {
+    // Force l'écoute du micro avec les filtres
+    myDsp.setDiagnostic(false); 
+    myDsp.setMute(false);
+  }
   else if (!modeDiagnostic && !modeCorrection) {
     // Mode "Repos" (Hors Diagnostic et Hors Correction)
     // On s'assure que le son du micro passe en direct (Bypass)
@@ -162,8 +179,10 @@ void loopDiagnostic() {
         modeCorrection = false;
         myDsp.setMute(true);
         earMode = 2;
+        myDsp.setEar(earMode);
         indexFreq = 0;
         dbPerteHL = 0.0;
+        audioShield.volume(0.5);
         Serial.println("ABORT_DIAG");
         return;
       }
@@ -206,10 +225,9 @@ void loopDiagnostic() {
 // ================================================================
 
 void passerAOreilleSuivante() {
-  if (earMode == 0 || earMode == 2) {
+  if (earMode == 0) {
     //lancerDiagnosticZones(sourdD, indD, 0, trousPrecisD, &nbTrousD);
-    if (earMode == 0){earMode = 1;}
-    else{earMode = 0;}
+    earMode = 1;    
     myDsp.setEar(earMode);
     indexFreq = 0;
     dbPerteHL = 0.0;
@@ -225,6 +243,8 @@ void passerAOreilleSuivante() {
     modeDiagnostic = false;
     modeCorrection = false;
     earMode = 2;
+    myDsp.setEar(earMode);
+
     myDsp.setMute(true); // Coupe le générateur
     
 
