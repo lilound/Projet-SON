@@ -111,21 +111,19 @@ class Window(tk.Tk):
         self.expo_menu = ttk.Combobox(self.sim_params_frame, textvariable=self.expo_var, values=["Normal", "Exposition modérée (Environnement bruyant)", "Exposition forte (Concerts)", "Exposition dangereuse"], state="readonly", font=("Segoe UI", 16), width=40)
         self.expo_menu.pack(padx=20, pady=10)
 
-        # --- Section Accouphènes (Radiobuttons) ---
-        tk.Label(self.sim_params_frame, text="Simulation d'acouphène :", font=("Segoe UI", 20), bg='#f5f6f7').pack(pady=(30, 10))
-        
-        self.bool_acc = tk.BooleanVar(value=False)
+        # --- Section Acouphènes (Radiobuttons) ---
+        self.bool_ac = tk.BooleanVar(value=False)
         radio_frame = tk.Frame(self.sim_params_frame, bg='#f5f6f7')
-        radio_frame.pack(fill="x", padx=20)
+        radio_frame.pack(fill="x", padx=20, pady=50)
 
         # Configuration compacte pour tes boutons
-        acc_config = {"variable": self.bool_acc, "command": self.start_simulation, "font": ('Segoe UI', 14, 'bold'), "indicatoron": False, "selectcolor": "#4682B4", "bg": "#2c3e50", "fg": "white", "activebackground": "#34495e", "bd": 0, "pady": 15}
+        ac_config = {"variable": self.bool_ac, "command": self.start_simulation, "font": ('Segoe UI', 14, 'bold'), "indicatoron": False, "selectcolor": "#4682B4", "bg": "#2c3e50", "fg": "white", "activebackground": "#34495e", "bd": 0, "pady": 15}
 
-        self.btn_acc_off = tk.Radiobutton(radio_frame, text="SANS ACCOUPHÈNE", value=False, **acc_config)
-        self.btn_acc_off.pack(side="left", expand=True, fill="both", padx=5)
+        self.btn_ac_off = tk.Radiobutton(radio_frame, text="SANS ACOUPHÈNE", value=False, **ac_config)
+        self.btn_ac_off.pack(side="left", expand=True, fill="both", padx=5)
 
-        self.btn_acc_on = tk.Radiobutton(radio_frame, text="AVEC ACCOUPHÈNE", value=True, **acc_config)
-        self.btn_acc_on.pack(side="left", expand=True, fill="both", padx=5)
+        self.btn_ac_on = tk.Radiobutton(radio_frame, text="AVEC ACOUPHÈNE", value=True, **ac_config)
+        self.btn_ac_on.pack(side="left", expand=True, fill="both", padx=5)
 
         # Audiogramme correspondant à la simulation à droite
         self.sim_graph_frame = tk.Frame(self.simulation_frame, bg='white', highlightbackground="#dddddd", highlightthickness=1)
@@ -244,7 +242,7 @@ class Window(tk.Tk):
 
         age = self.age_var.get()
         expo = self.expo_var.get()
-        bool_acc = self.bool_acc.get()
+        bool_ac = self.bool_ac.get()
 
         
 
@@ -257,7 +255,7 @@ class Window(tk.Tk):
         soixante = [13, 14, 17, 18, 23, 40, 49]
         soixantedix = [18, 19, 23, 28, 32, 49, 59]
         quatrevingts = [22, 23, 29, 32, 40, 55, 68]
-        accouphenes = [3000, 4000, 6000, 8000]
+        acouphenes = [3000, 4000, 6000, 8000]
 
         # A MODIFIER
         
@@ -284,7 +282,7 @@ class Window(tk.Tk):
         elif "Exposition dangereuse" in expo: 
             points[5] = age*1.3 - 10
         
-        acc = accouphenes[randint(0,3)]
+        ac = acouphenes[randint(0,3)]
 
         # Mise à jour du graphique spécifique à la simulation
         self.ax_sim.set_xticks(freqs)
@@ -293,8 +291,8 @@ class Window(tk.Tk):
         self.fig_sim.subplots_adjust(left=0.15, right=0.85, top=0.95, bottom=0.25)
         self.canvas_sim.draw()
         
-        if bool_acc: data = age + ";"+ acc +";"+ ",".join(map(str, points)) + "\n" # envoie les données sous la forme "acc :3000;0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
-        else : ",".join(map(str, points)) + "\n" # envoie les données sous la forme "acc :3000;0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
+        if bool_ac: data = age + ";"+ ac +";"+ ",".join(map(str, points)) + "\n" # envoie les données sous la forme "20;3000;0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
+        else : ",".join(map(str, points)) + "\n" # envoie les données sous la forme "0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
         send_data_to_teensy(self.arduino, data)
 
 
