@@ -13,6 +13,7 @@
 bool modeDiagnostic = false;   
 bool modeCorrection = false; 
 
+
 // --- OBJETS AUDIO ---
 // Entrée/Sortie Physique
 AudioInputI2S            in;
@@ -140,7 +141,9 @@ void loop() {
         modeCorrection = true;
         myDsp.setMute(false);  // Coupe le générateur}
       }
-      //else{ GERER LE CAS SIMULATION AVEC ACCOUPHENES}
+      else{ 
+        ajouterAcouphene(commande);
+      }
     }
 
   }
@@ -346,4 +349,24 @@ void mettreAJourFiltresSimulation(String commande) {
     if (startIndex >= commande.length()) break; 
   }
   Serial.println("FILTRES_OK"); // Petit feedback pour Python
+}
+
+void ajouterAcouphene(String commande){ 
+  int iAge = commande.indexOf(';');
+  float age = commande.substring(0, iAge).toFloat();
+
+  // 2. Trouver le deuxième ';' (après la fréquence)
+  int iFreqAcouphene = commande.indexOf(';', iAge + 1);
+  float freqAcouphene = commande.substring(iAge + 1, iFreqAcouphene).toFloat();
+
+  // 3. Extraire le reste (les gains) pour les envoyer aux filtres
+  String gains = commande.substring(iFreqAcouphene + 1);
+
+  // Appel de la fonction des filtres avec la partie restante
+  mettreAJourFiltresSimulation(gains);
+  if (freqAcouphene > 0) {
+    myDsp.setAcouphene(true, freqAcouphene, age);
+    Serial.println("ACOUPHENE_ON");
+  }
+
 }
