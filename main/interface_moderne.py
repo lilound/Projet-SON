@@ -239,14 +239,7 @@ class Window(tk.Tk):
         quatrevingts = [22, 23, 29, 32, 40, 55, 68]
 
         # A MODIFIER
-        if "Exposition modérée (Environnement bruyant)" in expo: 
-            trauma = 15
-        elif "Exposition forte (Concerts)" in expo: 
-            trauma = 30
-        elif "Exposition dangereuse" in expo: 
-            trauma = 50
-        else:
-            trauma = 0
+        
 
         if age == 20:
             points = vingt
@@ -263,8 +256,13 @@ class Window(tk.Tk):
         else:
             points = quatrevingts
 
-        for i in range(len(points)):
-            points[i] += trauma
+        if "Exposition modérée (Environnement bruyant)" in expo: 
+            points[5] = age*1.3 - 30
+        elif "Exposition forte (Concerts)" in expo: 
+            points[5] = age*1.3 - 20
+        elif "Exposition dangereuse" in expo: 
+            points[5] = age*1.3 - 10
+        
 
         # Mise à jour du graphique spécifique à la simulation
         self.ax_sim.set_xticks(freqs)
