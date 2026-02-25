@@ -34,17 +34,6 @@ AudioConnection          patchCordCorr1(in, 0, myDsp, 0);
 
 // --- VARIABLES GLOBALES (Issues des deux codes) ---
 
-// Filtres pour la correction
-PeakFilter filtres[7] = {
-  PeakFilter(AUDIO_SAMPLE_RATE_EXACT),
-  PeakFilter(AUDIO_SAMPLE_RATE_EXACT),
-  PeakFilter(AUDIO_SAMPLE_RATE_EXACT),
-  PeakFilter(AUDIO_SAMPLE_RATE_EXACT),
-  PeakFilter(AUDIO_SAMPLE_RATE_EXACT),
-  PeakFilter(AUDIO_SAMPLE_RATE_EXACT),
-  PeakFilter(AUDIO_SAMPLE_RATE_EXACT)
-};
-
 // Variables de diagnostic
 float frequencesStandard[] = {125, 250, 500, 1000, 2000, 4000, 8000};
 int indexFreq = 0;
@@ -339,11 +328,11 @@ void mettreAJourFiltresSimulation(String commande) {
     if (endIndex == -1) endIndex = commande.length();
     
     // Extraction du gain
-    float gain = -commande.substring(startIndex, endIndex).toFloat();
+    float gain = commande.substring(startIndex, endIndex).toFloat();
     float freq = frequencesStandard[i]; // On utilise tes fréquences (125, 250...)
     
     // Application au filtre (Q = 1.0 par défaut pour une correction douce)
-    myDsp.setFilter(i, gain, freq, 0.5f); 
+    myDsp.setFilter(i, -3.0, freq, 1.5); 
     
     startIndex = endIndex + 1;
     if (startIndex >= commande.length()) break; 

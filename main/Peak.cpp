@@ -3,29 +3,25 @@
 
 PeakFilter::PeakFilter(float SR) : _SR(SR), x1(0), x2(0), y1(0), y2(0) {}
 
-void PeakFilter::setup(float Lfx, float fx, float B) {
+void PeakFilter::setup(float Lfx, float fx, float Q)
+{
+    // Lfx = gain en dB, fx = fréquence centrale, Q = facteur de qualité
+    float A  = pow(10.0f, Lfx / 40.0f);   // Convertit dB en amplitude
+    float w0 = 2.0f * PI * fx / _SR;      // Fréquence normalisée
+    float alpha = sin(w0) / (2.0f * Q);   // Largeur de bande
+    float cosw = cos(w0);
 
-    float g = pow(10.0, abs(Lfx) / 40.0);
-    float w0 = 2.0 * PI * fx / _SR;
-    float alpha = sin(w0) * sinh(log(2.0) / 2.0 * B * w0 / sin(w0));
+    // Coefficients biquad Peak EQ standard
+    float a0 = 1.0f + alpha / A;
+    b0 = 1.0f + alpha * A;
+    b1 = -2.0f * cosw;
+    b2 = 1.0f - alpha * A;
+    a1 = -2.0f * cosw;
+    a2 = 1.0f - alpha / A;
 
-    float a0;
-    if (Lfx >= 0) { // Boost
-        b0 = 1.0 + alpha * g;
-        b1 = -2.0 * cos(w0);
-        b2 = 1.0 - alpha * g;
-        a0 = 1.0 + alpha / g;
-    } else { // Cut
-        b0 = 1.0 + alpha / g;
-        b1 = -2.0 * cos(w0);
-        b2 = 1.0 - alpha / g;
-        a0 = 1.0 + alpha * g;
-    }
-    
-    // Normalisation des coefficients
+    // Normalisation
     b0 /= a0; b1 /= a0; b2 /= a0;
-    a1 = (-2.0 * cos(w0)) / a0;
-    a2 = (1.0 - (Lfx >= 0 ? alpha/g : alpha*g)) / a0;
+    a1 /= a0; a2 /= a0;
 }
 
 float PeakFilter::tick(float input) {

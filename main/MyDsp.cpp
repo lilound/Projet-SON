@@ -6,7 +6,8 @@ MyDsp::MyDsp() : AudioStream(1, inputQueueArray), source(44100), earMode(2), osc
   _isDiagnostic = false;
   _mute = true; 
   acoupheneActif = false;
-  for(int i=0; i<7; i++) filters[i].setup(0.0, 1000.0, 100.0); 
+  for(int i=0; i<7; i++)
+    filters[i].setup(0.0, 1000.0, 1.5);  // Q = 1
 }
 
 void MyDsp::setFreq(float f) { source.setFrequency(f); }
