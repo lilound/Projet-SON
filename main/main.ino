@@ -69,7 +69,7 @@ void setup() {
    
   audioShield.enable();
   audioShield.inputSelect(AUDIO_INPUT_MIC);
-  audioShield.micGain(20); 
+  audioShield.micGain(30); 
   audioShield.volume(0.5);
 
   myDsp.setEar(earMode);
@@ -93,6 +93,10 @@ void loop() {
     commande.trim();
 
     if (commande == "START_DIAG") {
+      for(int i=0; i<7; i++) {
+        myFilters.setParamValue(("/Filters/level_0" + String(i)).c_str(), 0.0);
+        myFilters.setParamValue(("/Filters/level_1" + String(i)).c_str(), 0.0);
+      }
       myDsp.setDiagnostic(true);
       modeDiagnostic = true;
       modeCorrection = false;
@@ -170,9 +174,9 @@ void loopDiagnostic() {
   if (enPauseEntreFrequences) {
     if (millis() >= momentFinPause) {
       enPauseEntreFrequences = false;
-      tempsDebutPalier = millis();
       derniereDbEnvoyee = -100.0; 
       myDsp.setMute(false); 
+      tempsDebutPalier = millis();
     } else {
       return; 
     }
@@ -184,9 +188,8 @@ void loopDiagnostic() {
   audioShield.volume(dbToLin(dbPerteHL)); 
 
   if (dbPerteHL != derniereDbEnvoyee) {
-    Serial.print(freqActuelle); Serial.print(" ");
-    Serial.println(-dbPerteHL); 
     derniereDbEnvoyee = dbPerteHL;
+    tempsDebutPalier = millis();
   }
 
   // 4. Bouton
@@ -199,7 +202,7 @@ void loopDiagnostic() {
   } 
   else if (buttonState == LOW) {
     oldButtonState = LOW;
-    if (millis() - tempsDebutPalier > 4000) { 
+    if (millis() - tempsDebutPalier > 2000) { 
       dbPerteHL += 10.0; 
       if (dbPerteHL > 70.0) { 
         enregistrerResultat(freqActuelle, 70.0);
