@@ -301,7 +301,7 @@ class Window(tk.Tk):
             # Format attendu par ajouterAcouphene sur Teensy: "20;4000;-10,-20..."
             data = f"{age};{ac};{points_str}\n" 
         else : 
-            data = f"{points_str}\n" # envoie les données sous la forme "0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
+            data = f"{age};{-1};{points_str}\n" # envoie les données sous la forme "0,0,0,3,5,13,18\n" pour que le Teensy puisse les lire facilement
         send_data_to_teensy(self.arduino, data)
 
 
