@@ -14,9 +14,9 @@ public:
 private:
   SineTable sineTable;
   Phasor phasor1;
-  Phasor phasor2;
   float gain;
   int samplingRate;
 };
+
 
 #endif  // SINE_H_INCLUDED
