@@ -18,7 +18,7 @@ AudioOutputI2S           out;
 AudioControlSGTL5000     audioShield;
 
 MyDsp                    myDsp; 
-Filters                  myFilters; // Un seul objet gère tout (7 bandes, stéréo)
+Filters                  myFilters; // Objet Faust (7 bandes, stéréo)
 
 // --- CONNEXIONS AUDIO ---
 AudioConnection          patchCordIn(in, 0, myDsp, 0); 
@@ -33,7 +33,7 @@ int indexFreq = 0;
 int totalFreq = 7;
 float seuilDiagnosticdB = 40.0; 
 float dbPerteHL = 0.0; 
-float derniereDbEnvoyee = -100.0; // Pour éviter de saturer le port série
+float derniereDbEnvoyee = -100.0; 
 unsigned long tempsDebutPalier = 0;
 bool enPauseEntreFrequences = false;
 unsigned long momentFinPause = 0;
@@ -65,7 +65,7 @@ void ajouterAcouphene(String commande);
 // ================================================================
 void setup() {
   Serial.begin(9600);
-  pinMode(0, INPUT_PULLDOWN); // Sécurise l'état du bouton
+  pinMode(0, INPUT_PULLDOWN); // Sécurise le bouton physique
    
   audioShield.enable();
   audioShield.inputSelect(AUDIO_INPUT_MIC);
@@ -77,7 +77,7 @@ void setup() {
   
   AudioMemory(40);
 
-  // Reset des filtres Faust
+  // Initialisation des filtres Faust à 0dB
   for(int i=0; i<7; i++) {
     myFilters.setParamValue(("/Filters/level_0" + String(i)).c_str(), 0.0);
     myFilters.setParamValue(("/Filters/level_1" + String(i)).c_str(), 0.0);
@@ -129,6 +129,7 @@ void loop() {
     }
   }
 
+  // Exécution des modes
   if (modeDiagnostic) {
     loopDiagnostic();
   } 
@@ -143,14 +144,13 @@ void loop() {
 }
 
 // ================================================================
-// LOGIQUE DIAGNOSTIC
+// LOGIQUE DU TEST AUDITIF
 // ================================================================
 void loopDiagnostic() {
-  // 1. GESTION DU STOP (Lecture réelle de la commande)
+  // 1. Lecture STOP prioritaire
   if (Serial.available() > 0) {
     String commande = Serial.readStringUntil('\n');
     commande.trim();
-    
     if (commande == "STOP") {
         myDsp.setDiagnostic(false);
         modeDiagnostic = false;
@@ -158,11 +158,11 @@ void loopDiagnostic() {
         earMode = 2;
         myDsp.setEar(earMode);
         Serial.println("ABORT_DIAG");
-        return; // On sort immédiatement de la fonction
+        return;
     }
   }
 
-  // 2. Gestion de la pause entre bips (Non-bloquant)
+  // 2. Gestion de la pause
   if (enPauseEntreFrequences) {
     if (millis() >= momentFinPause) {
       enPauseEntreFrequences = false;
@@ -174,19 +174,18 @@ void loopDiagnostic() {
     }
   }
 
-  // 3. Logique sonore
+  // 3. Audio & Envoi PC
   float freqActuelle = frequencesStandard[indexFreq];
   myDsp.setFreq(freqActuelle);
   audioShield.volume(dbToLin(dbPerteHL)); 
 
-  // Envoi au PC uniquement si changement
   if (dbPerteHL != derniereDbEnvoyee) {
     Serial.print(freqActuelle); Serial.print(" ");
     Serial.println(-dbPerteHL); 
     derniereDbEnvoyee = dbPerteHL;
   }
 
-  // 4. Lecture du bouton
+  // 4. Bouton
   buttonState = digitalRead(0);
   if (buttonState == HIGH && oldButtonState == LOW) {
     myDsp.setMute(true);
@@ -217,7 +216,7 @@ void mettreAJourFiltresSimulation(String commande) {
     if (endIndex == -1) endIndex = commande.length();
     float gain = commande.substring(startIndex, endIndex).toFloat();
     
-    // SÉCURITÉ : Faust amplifie si gain > 0. On force en négatif pour simuler une perte.
+    // On force en négatif pour simuler l'atténuation (perte)
     if (gain > 0) gain = -gain; 
 
     myFilters.setParamValue(("/Filters/level_0" + String(i)).c_str(), gain);
@@ -231,11 +230,14 @@ void mettreAJourFiltresSimulation(String commande) {
 
 void ajouterAcouphene(String commande){ 
   int iAge = commande.indexOf(';');
+  if (iAge < 0) return;
   float age = commande.substring(0, iAge).toFloat();
-  int iFreqAcouphene = commande.indexOf(';', iAge + 1);
-  float freqAcouphene = commande.substring(iAge + 1, iFreqAcouphene).toFloat();
-  String gains = commande.substring(iFreqAcouphene + 1);
 
+  int iFreqAc = commande.indexOf(';', iAge + 1);
+  if (iFreqAc < 0) return;
+  float freqAcouphene = commande.substring(iAge + 1, iFreqAc).toFloat();
+
+  String gains = commande.substring(iFreqAc + 1);
   mettreAJourFiltresSimulation(gains);
   
   modeCorrection = true; 
@@ -268,7 +270,7 @@ void enregistrerResultat(float f, float db) {
 void preparerFrequenceSuivante() {
   myDsp.setMute(true);
   enPauseEntreFrequences = true;
-  momentFinPause = millis() + 600; // Pause courte de 0.6s
+  momentFinPause = millis() + 600; 
   indexFreq++;
   if (indexFreq >= totalFreq) {
     passerAOreilleSuivante();
