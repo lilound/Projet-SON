@@ -300,7 +300,7 @@ class Window(tk.Tk):
         elif "Exposition dangereuse" in expo: 
             points[5] = min(90, age*1.3 - 10)
         
-        ac = 250
+        ac = acouphenes[randint(0,3)]
 
         # Mise à jour du graphique spécifique à la simulation
         
