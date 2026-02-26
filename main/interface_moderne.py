@@ -130,14 +130,28 @@ class Window(tk.Tk):
         self.sim_graph_frame.pack(side="right", fill="both", expand=True, padx=30, pady=20)
 
         tk.Label(self.sim_graph_frame, text="PROFIL AUDITIF SIMULÉ", font=("Segoe UI", 30, "bold"), bg="white", fg="#2c3e50").pack(pady=(100,40))
-
+        self.afficher_legende()
         self.fig_sim, self.ax_sim = plt.subplots(figsize=(6, 4))
         self.canvas_sim = FigureCanvasTkAgg(self.fig_sim, master=self.sim_graph_frame)
         self.canvas_sim.get_tk_widget().pack(fill="both", expand=True)
         self.style_graph([self.ax_sim], [""], self.fig_sim)
 
         
+    def afficher_legende(self):
+        age = self.age_var.get()
+        expo = self.expo_var.get()
+        bool_ac = self.bool_ac.get()
+        lgd = 'Patient.e de ' + age +' ans, sous une '+ expo## 20 ans , exposition ... avec accouphènes en dessous de profil auditif simulé 
+        if bool_ac : 
+            lgd += ' avec un accouphène persistant.'
+        else : 
+            lgd += ' sans accouphène.'
+        tk.Label(self.sim_graph_frame, text=lgd, font=("Segoe UI", 14, "bold"), bg="white", fg="#2c3e50").pack(pady=(100,40))
+        
 
+
+
+    
     def diagnostic(self):
 
         # on réinitialise l'affichage des graphes
@@ -417,3 +431,6 @@ class Window(tk.Tk):
 if __name__ == "__main__":
     app = Window()
     app.mainloop()
+
+
+
