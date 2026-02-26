@@ -215,7 +215,7 @@ void mettreAJourFiltresSimulation(String commande) {
     int endIndex = commande.indexOf(',', startIndex);
     if (endIndex == -1) endIndex = commande.length();
     float gain = commande.substring(startIndex, endIndex).toFloat();
-    
+    gain = gain/2;
     // On force en négatif pour simuler l'atténuation (perte)
     if (gain > 0) gain = -gain; 
 

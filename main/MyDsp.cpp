@@ -23,8 +23,7 @@ void MyDsp::setAcouphene(bool actif, float freq, float age) {
     acoupheneActif = actif;
     if (actif) {
         oscilloAcouphene.setFrequency(freq);
-        float nouveauGain = 0.02 + ((age - 20) * 0.002);
-        if (nouveauGain > 0.15) nouveauGain = 0.15;
+        float nouveauGain = 0.001;
         oscilloAcouphene.setGain(nouveauGain);
     }
 }
@@ -58,7 +57,9 @@ void MyDsp::update(void) {
 
     // 3. Ajout de l'acouphène (Sifflement constant)
     if (acoupheneActif) {
-        processedSample += oscilloAcouphene.tick();
+        // On multiplie par un facteur très petit (0.002) 
+        // directement ici pour être CERTAIN que c'est pris en compte
+        processedSample += (oscilloAcouphene.tick() * 0.0015f); 
     }
     
     // 4. Limitation et Conversion
