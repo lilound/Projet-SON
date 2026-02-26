@@ -7,7 +7,6 @@
 Additive::Additive(int SR) : 
 sineTable(SINE_TABLE_SIZE),
 phasor1(SR),
-phasor2(SR),
 gain(1.0),
 samplingRate(SR){}
 
@@ -22,6 +21,7 @@ void Additive::setGain(float g){
     
 float Additive::tick(){
   int index1 = phasor1.tick()*SINE_TABLE_SIZE;
-  int index2 = int(index1*1.5)%SINE_TABLE_SIZE;
-  return sineTable.tick(index1) + sineTable.tick(index2)*gain*0.5;
+  //int index2 = int(index1*1.5)%SINE_TABLE_SIZE;
+  //return sineTable.tick(index1) + sineTable.tick(index2)*gain*0.5;
+  return sineTable.tick(index1);
 }
