@@ -31,7 +31,7 @@ class Window(tk.Tk):
         self.style.map('Rounded.TButton', background=[('active', '#34495e'), ('pressed', '#1a252f')])
 
         try:
-            self.arduino = serial.Serial(port='COM3', baudrate=9600, timeout=.1)
+            self.arduino = serial.Serial(port='COM5', baudrate=9600, timeout=.1)
             time.sleep(2) 
             print("Connexion OK. En attente du signal...")
         except Exception as e:
@@ -210,7 +210,11 @@ class Window(tk.Tk):
                 self.btn_stop_corr.config(state="normal")
                 return
             else:
+                self.data_correction = donnees
+                self.data_correction ="START_CORR;" + ",".join(map(str, donnees))+";"
                 self.after(0, self.finaliser_diagnostic, donnees) # On continue avec les données
+
+        
                 
 
 
@@ -231,7 +235,7 @@ class Window(tk.Tk):
         self.btn_correction.config(state='disabled')
         self.btn_mode.config(state='disabled')
         self.btn_stop_corr.config(state="normal")
-        send_data_to_teensy(self.arduino, "START_CORR\n")
+        send_data_to_teensy(self.arduino, self.data_correction)
 
 
 
@@ -296,7 +300,7 @@ class Window(tk.Tk):
         elif "Exposition dangereuse" in expo: 
             points[5] = min(90, age*1.3 - 10)
         
-        ac = acouphenes[randint(0,3)]
+        ac = 250
 
         # Mise à jour du graphique spécifique à la simulation
         
