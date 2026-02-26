@@ -117,7 +117,7 @@ class Window(tk.Tk):
         radio_frame.pack(fill="x", padx=20, pady=50)
 
         # Configuration compacte pour tes boutons
-        ac_config = {"variable": self.bool_ac, "command": self.start_simulation, "font": ('Segoe UI', 14, 'bold'), "indicatoron": False, "selectcolor": "#4682B4", "bg": "#2c3e50", "fg": "white", "activebackground": "#34495e", "bd": 0, "pady": 15}
+        ac_config = {"variable": self.bool_ac, "font": ('Segoe UI', 14, 'bold'), "indicatoron": False, "selectcolor": "#4682B4", "bg": "#2c3e50", "fg": "white", "activebackground": "#34495e", "bd": 0, "pady": 15}
 
         self.btn_ac_off = tk.Radiobutton(radio_frame, text="SANS ACOUPHÈNE", value=False, **ac_config)
         self.btn_ac_off.pack(side="left", expand=True, fill="both", padx=5)
