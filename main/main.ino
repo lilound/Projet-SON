@@ -107,6 +107,7 @@ void loop() {
     } 
     else if (commande == "STOP") {
         myDsp.setDiagnostic(false);
+        mettreAJourFiltresSimulation("0,0,0,0,0,0,0");
         modeDiagnostic = false;
         modeCorrection = false;
         myDsp.setMute(true);
@@ -125,6 +126,9 @@ void loop() {
       }
       else { 
         ajouterAcouphene(commande);
+        modeDiagnostic = false;
+        modeCorrection = true;
+        myDsp.setMute(false); 
       }
     }
   }
@@ -211,13 +215,14 @@ void loopDiagnostic() {
 // ================================================================
 void mettreAJourFiltresSimulation(String commande) {
   unsigned int startIndex = 0;
+  
   for (int i = 0; i < 7; i++) {
     int endIndex = commande.indexOf(',', startIndex);
     if (endIndex == -1) endIndex = commande.length();
     float gain = commande.substring(startIndex, endIndex).toFloat();
-    gain = gain/2;
-    // On force en négatif pour simuler l'atténuation (perte)
-    if (gain > 0) gain = -gain; 
+    if (gain < 0){
+      gain = gain/3;
+    }
 
     myFilters.setParamValue(("/Filters/level_0" + String(i)).c_str(), gain);
     myFilters.setParamValue(("/Filters/level_1" + String(i)).c_str(), gain);
