@@ -194,7 +194,12 @@ void loopDiagnostic() {
   // 3. Audio & Envoi PC
   float freqActuelle = frequencesStandard[indexFreq];
   myDsp.setFreq(freqActuelle);
-  audioShield.volume(dbToLin(dbPerteHL)); 
+  if ((freqActuelle > 4000) && (dbPerteHL> 40.0)){
+    audioShield.volume(dbToLin(dbPerteHL)/2.0); 
+  }
+  else {
+    audioShield.volume(dbToLin(dbPerteHL)); 
+  }
 
   if (dbPerteHL != derniereDbEnvoyee) {
     derniereDbEnvoyee = dbPerteHL;
@@ -233,7 +238,7 @@ void mettreAJourFiltresSimulation(String commande) {
     if (endIndex == -1) endIndex = commande.length();
     float gain = commande.substring(startIndex, endIndex).toFloat();
     if (gain < 0){
-      gain = gain/3;
+      gain = gain/4;
     }
 
     myFilters.setParamValue(("/Filters/level_0" + String(i)).c_str(), gain);
