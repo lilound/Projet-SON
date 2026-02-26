@@ -226,11 +226,21 @@ class Window(tk.Tk):
 
 
     def correction(self): 
+        self.btn_diag.config(state='disabled')
+        self.btn_stop_diag.config(state='disabled')
+        self.btn_correction.config(state='disabled')
+        self.btn_mode.config(state='disabled')
+        self.btn_stop_corr.config(state="normal")
         send_data_to_teensy(self.arduino, "START_CORR\n")
 
 
 
     def stop_correction(self):
+        self.btn_diag.config(state="normal")
+        self.btn_stop_diag.config(state="normal")
+        self.btn_correction.config(state="normal")
+        self.btn_mode.config(state="normal")
+        self.btn_stop_corr.config(state="normal")
         send_data_to_teensy(self.arduino, "STOP\n")
     
 
@@ -246,6 +256,9 @@ class Window(tk.Tk):
         bool_ac = self.bool_ac.get()
 
         
+        self.btn_mode.config(state='disabled')
+        self.btn_stop_sim.config(state="normal")
+        self.btn_run_sim.config(state='normal')
 
         
         freqs = [125, 250, 500, 1000, 2000, 4000, 8000]
@@ -317,6 +330,10 @@ class Window(tk.Tk):
 
 
     def stop_simulation(self):
+
+        self.btn_mode.config(state='normal')
+        self.btn_stop_sim.config(state="normal")
+        self.btn_run_sim.config(state='normal')
         # on nettoie le graphe
         send_data_to_teensy(self.arduino,"STOP\n")
         self.style_graph([self.ax_sim], [""], self.fig_sim)
@@ -341,7 +358,6 @@ class Window(tk.Tk):
             self.btn_stop_sim.pack(side="left", padx=10, expand=True, fill="both", before=self.btn_mode) 
             self.btn_run_sim.pack(side="left", padx=10, expand=True, fill="both", before=self.btn_stop_sim)  
              
-
             self.mode.config(text="MODE SIMULATION")
             self.btn_mode.config(text="Passer en mode correction")
         else:
@@ -355,9 +371,10 @@ class Window(tk.Tk):
             
             # On réaffiche les boutons
             self.btn_correction.pack(side="left", padx=10, expand=True, fill="both", before=self.btn_mode)
+            self.btn_stop_corr.pack(side="left", padx=15, expand=True, fill="both", after=self.btn_correction)
             self.btn_diag.pack(side="left", padx=10, expand=True, fill="both", before=self.btn_correction) 
             self.btn_stop_diag.pack(side="left", padx=15, expand=True, fill="both", after=self.btn_diag)
-            self.btn_stop_corr.pack(side="left", padx=15, expand=True, fill="both", after=self.btn_stop_diag)
+            
 
             
             self.mode.config(text="MODE CORRECTION")
@@ -419,6 +436,7 @@ class Window(tk.Tk):
 
 
     def on_close(self): 
+        send_data_to_teensy(self.arduino, "STOP\n")
         self.quit()
         self.destroy()
 
